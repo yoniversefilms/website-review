@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex,nofollow" />
+<title>·</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2c; --panel2:#1c2534; --line:#26324a;
+    --ink:#e7ecf5; --dim:#93a0b8; --accent:#4f8cff; --accent2:#7c5cff;
+    --ok:#3ecf8e; --warn:#f5b445; --idea:#c77dff; --now:#4f8cff;
+    --r:14px; --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);background:#0c1220;border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:.86em;color:#cdd8ff}
+
+  #gate{min-height:100vh;display:flex;align-items:center;justify-content:center;color:#3a465c;font-family:var(--mono);font-size:14px}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 80px}
+  header.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+        display:flex;align-items:center;justify-content:center;font-size:18px}
+  h1{font-size:20px;margin:0;letter-spacing:-.01em}
+  .sub{color:var(--dim);font-size:13px;margin:2px 0 0}
+  .pill{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--warn);border:1px solid #3a3320;background:#241f10;
+        padding:4px 9px;border-radius:999px}
+
+  .tabs{display:flex;gap:8px;margin:22px 0 26px;border-bottom:1px solid var(--line)}
+  .tab{appearance:none;background:none;border:0;color:var(--dim);font:600 14px/1 var(--sans);padding:12px 6px;margin-right:14px;
+       cursor:pointer;border-bottom:2px solid transparent;translate:0 1px}
+  .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+  section.tabpane[hidden]{display:none}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin:34px 0 14px;font-weight:700}
+  h2:first-child{margin-top:0}
+  p.lead{font-size:16px;color:var(--ink)}
+  .muted{color:var(--dim)}
+
+  .loop{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);
+        border-radius:var(--r);padding:18px}
+  .node{flex:1 1 120px;min-width:120px;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:12px}
+  .node .k{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+  .node .v{font-weight:700;margin-top:3px}
+  .node .d{font-size:12px;color:var(--dim);margin-top:5px}
+  .node.person{border-color:#2f3f63} .node.brain{border-color:#3a2f63}
+  .arrow{align-self:center;color:var(--accent);font-size:20px;flex:0 0 auto}
+  .backline{margin-top:12px;font-size:13px;color:var(--dim);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .backline b{color:var(--ok)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+  .card h3{margin:0 0 4px;font-size:14px;display:flex;align-items:center;gap:8px}
+  .card .tag{font-family:var(--mono);font-size:10.5px;color:var(--dim);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+  .card p{margin:6px 0 0;font-size:13px;color:var(--dim)}
+
+  .rows{display:flex;flex-direction:column;gap:8px}
+  .row{display:flex;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px 13px;align-items:flex-start}
+  .row .ic{flex:0 0 26px;height:26px;border-radius:7px;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:14px}
+  .row .b{min-width:0}
+  .row .b .t{font-weight:600;font-size:13.5px}
+  .row .b .s{font-size:12.5px;color:var(--dim);margin-top:2px}
+
+  .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;align-items:start}
+  .col{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px}
+  .col h3{margin:0 0 10px;font-size:13px;display:flex;align-items:center;gap:8px}
+  .dot{width:9px;height:9px;border-radius:50%}
+  .col .item{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin-bottom:8px}
+  .col .item:last-child{margin-bottom:0}
+  .item .t{font-weight:600;font-size:13px}
+  .item .s{font-size:12px;color:var(--dim);margin-top:3px}
+  .item .ph{font-family:var(--mono);font-size:10px;color:var(--dim);float:right;margin-left:8px}
+  .chip{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:1px 7px;border-radius:999px;margin-top:6px}
+  .c-done{background:#0f2a1e;color:var(--ok);border:1px solid #1c4a35}
+  .c-now{background:#122036;color:var(--now);border:1px solid #234a7a}
+  .c-plan{background:#2a230f;color:var(--warn);border:1px solid #4a3c1c}
+  .c-idea{background:#241033;color:var(--idea);border:1px solid #43265e}
+
+  .note{background:#101a12;border:1px solid #1c3a28;border-radius:11px;padding:11px 13px;color:#bfe6cf;font-size:13px;margin-top:18px}
+  .foot{color:#55627a;font-size:12px;margin-top:34px}
+  .kbd{font-family:var(--mono);background:#0c1220;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 5px;font-size:11px}
+</style>
+</head>
+<body>
+  <div id="gate">— not found —</div>
+
+  <div class="wrap" id="app" hidden>
+    <header class="top">
+      <div class="logo">◑</div>
+      <div>
+        <h1>Website Review — internal</h1>
+        <p class="sub">How the tool is built &amp; what's next. Not linked anywhere; reveal with <span class="kbd">#build</span> in the URL.</p>
+      </div>
+      <span class="pill">HIDDEN · INTERNAL</span>
+    </header>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true"  data-pane="how">How it works</button>
+      <button class="tab" role="tab" aria-selected="false" data-pane="roadmap">Roadmap &amp; features</button>
+    </div>
+
+    <section class="tabpane" id="pane-how">
+      <p class="lead">A reviewer annotates a live site through a share-link. Their notes land in Supabase,
+      sync down into a file <b>Claude</b> reads, and become edits to the site that <b>you approve</b> — then
+      "resolved" flows back so the reviewer sees it. That round-trip is the whole product.</p>
+
+      <h2>The loop</h2>
+      <div class="loop">
+        <div class="node person"><div class="k">1 · Person</div><div class="v">Reviewer</div><div class="d">Opens <code>?review=KEY</code>, drops pins / highlights + photos. No login.</div></div>
+        <div class="arrow">→</div>
+        <div class="node"><div class="k">2 · Cloud</div><div class="v">Supabase</div><div class="d">notes + photos, scoped to the project key by RLS.</div></div>
+        <div class="arrow">→</div>
+        <div class="node"><div class="k">3 · Script</div><div class="v">sync.mjs</div><div class="d"><code>node sync.mjs ruth</code> pulls it all down.</div></div>
+        <div class="arrow">→</div>
+        <div class="node"><div class="k">4 · File</div><div class="v">feedback.md</div><div class="d">In the site's repo, grouped by section.</div></div>
+        <div class="arrow">→</div>
+        <div class="node brain"><div class="k">5 · AI</div><div class="v">Claude</div><div class="d">Reads it, proposes edits to <code>index.html</code>.</div></div>
+        <div class="arrow">→</div>
+        <div class="node person"><div class="k">6 · You</div><div class="v">Yonatan</div><div class="d">Approve / modify. Nothing ships without you.</div></div>
+      </div>
+      <div class="backline">↩︎ <span>then</span> <b>node sync.mjs ruth --push</b> <span>writes the status back → the reviewer's pin shows</span> <b>Resolved ✓</b></div>
+
+      <h2>Where it can live (hosting)</h2>
+      <div class="rows">
+        <div class="row"><div class="ic">🅖</div><div class="b"><div class="t">Inside a GHL page (recommended for GHL sites)</div><div class="s">Inline the whole widget into the site's GHL Custom-HTML embed — no separate file host. Dormant for visitors; wakes on <code>?review=KEY</code>. One paste per client account.</div></div></div>
+        <div class="row"><div class="ic">📄</div><div class="b"><div class="t">Static host (GitHub Pages)</div><div class="s">For non-GHL sites: host <code>embed.js</code> + <code>config.js</code> and reference by <code>&lt;script src&gt;</code>.</div></div></div>
+      </div>
+
+      <h2>The pieces</h2>
+      <div class="grid">
+        <div class="card"><h3>embed.js <span class="tag">widget</span></h3><p>One script you paste (or inline) into any site you control. Shadow-DOM (can't collide with the host), RTL-aware. Stays <b>dormant</b> until the page is opened with <code>?review=KEY</code>. Draws the pins, composer &amp; notes list.</p></div>
+        <div class="card"><h3>config.js <span class="tag">keys</span></h3><p>Supabase URL + the <b>publishable</b> key (browser-safe). The one file you edit to point the tool at your Supabase.</p></div>
+        <div class="card"><h3>Supabase <span class="tag">backend</span></h3><p>Tables <code>projects / notes / comments / attachments</code>, RLS scoped by the <code>x-board-key</code> header, and a public-read <code>review-photos</code> bucket. One project serves every client board.</p></div>
+        <div class="card"><h3>sync.mjs <span class="tag">bridge</span></h3><p>~30-line Node script. <code>pull</code> → writes <code>feedback.json/.md</code> + downloads photos. <code>--push</code> → sends resolved status back up. Uses only the public key. <span class="muted">(Phase 3)</span></p></div>
+        <div class="card"><h3>feedback.md / .json <span class="tag">the handoff</span></h3><p>Lives inside the reviewed site's repo. <code>.json</code> is the source of truth; <code>.md</code> is the human/Claude-readable mirror, grouped by section. <span class="muted">(Phase 3)</span></p></div>
+        <div class="card"><h3>Claude Code <span class="tag">the doer</span></h3><p>Reads <code>feedback.md</code>, locates each note by its section id + quoted text, and proposes a real diff to <code>index.html</code> for your approval.</p></div>
+      </div>
+
+      <h2>How a note finds its spot (anchoring)</h2>
+      <div class="rows">
+        <div class="row"><div class="ic">①</div><div class="b"><div class="t">Nearest section id</div><div class="s">The pin latches onto the closest ancestor with an id — <code>#about</code>, <code>#process</code>… The Ruth site has clean ones, so Claude knows exactly which section.</div></div></div>
+        <div class="row"><div class="ic">②</div><div class="b"><div class="t">Verbatim quoted text</div><div class="s">For highlights: the exact selected words (+ a little surrounding text). Survives layout changes and maps straight to "change this sentence."</div></div></div>
+        <div class="row"><div class="ic">③</div><div class="b"><div class="t">Fractional position</div><div class="s">x/y as a fraction of the anchor box, so a pin dropped on mobile still lands right on desktop.</div></div></div>
+        <div class="row"><div class="ic">⚑</div><div class="b"><div class="t">Can't resolve? Parked.</div><div class="s">If the target is genuinely gone, the note goes to a "needs re-anchor" tray — never silently mis-placed.</div></div></div>
+      </div>
+      <p class="muted" style="font-size:12.5px;margin-top:12px">We deliberately <b>don't</b> stamp hidden ids into the page — a static <code>index.html</code> never gets them back on disk, so Claude would never see them. Section id + exact quote are the anchors that actually survive Claude editing the file.</p>
+
+      <h2>Access &amp; security</h2>
+      <div class="rows">
+        <div class="row"><div class="ic">🔑</div><div class="b"><div class="t">Capability link, no login</div><div class="s">The project key in <code>?review=…</code> is the credential — treat the link like a password. Reused from the HomeApp board model.</div></div></div>
+        <div class="row"><div class="ic">🛡️</div><div class="b"><div class="t">RLS is the whole boundary</div><div class="s">Every row is scoped to its project key; a wrong key sees zero rows (verified). The publishable key is public by design.</div></div></div>
+        <div class="row"><div class="ic">⚠️</div><div class="b"><div class="t">Honest limit</div><div class="s">One key per project → the tool can't yet tell "owner" from "reviewer" server-side. Fine for a founder + a few trusted reviewers; upgrade path is Supabase Auth.</div></div></div>
+      </div>
+
+      <div class="note">✅ <b>Live now:</b> schema + RLS + storage (Phase 0), backend verified end-to-end (Phase 1), and the point-pin widget saving to Supabase on the Ruth site (Phase 2). Next is the Claude sync loop.</div>
+    </section>
+
+    <section class="tabpane" id="pane-roadmap" hidden>
+      <p class="lead">Everything we've shipped, what's in flight, and the features we still want to build.
+      Edit this file (or just tell Claude) to add, reprioritize, or check things off.</p>
+
+      <div class="board">
+        <div class="col">
+          <h3><span class="dot" style="background:var(--ok)"></span> Done</h3>
+          <div class="item"><span class="ph">P0</span><div class="t">Supabase schema</div><div class="s">projects / notes / comments / attachments, RLS, photo bucket, realtime.</div><span class="chip c-done">shipped</span></div>
+          <div class="item"><span class="ph">P1</span><div class="t">Backend verified</div><div class="s">insert / select / RLS isolation proven against the live DB (6/7).</div><span class="chip c-done">shipped</span></div>
+          <div class="item"><span class="ph">P2</span><div class="t">Point-pin widget</div><div class="s">Shadow-DOM embed, arm → click → compose → save; section-id anchoring; notes list; offline cache.</div><span class="chip c-done">shipped</span></div>
+        </div>
+
+        <div class="col">
+          <h3><span class="dot" style="background:var(--now)"></span> Building next</h3>
+          <div class="item"><span class="ph">P3</span><div class="t">sync.mjs → feedback.md</div><div class="s">Pull notes + photos into the site repo as a file Claude reads.</div><span class="chip c-now">next</span></div>
+          <div class="item"><span class="ph">P3</span><div class="t">Claude proposes an edit</div><div class="s">Read a real note, edit <code>index.html</code> anchored by section id. Proves the loop.</div><span class="chip c-now">next</span></div>
+          <div class="item"><span class="ph">P4</span><div class="t">Approve + push status back</div><div class="s"><code>--push</code> flips the note to resolved so the reviewer sees it.</div><span class="chip c-now">next</span></div>
+        </div>
+
+        <div class="col">
+          <h3><span class="dot" style="background:var(--warn)"></span> Planned</h3>
+          <div class="item"><span class="ph">P5</span><div class="t">Text-highlight tool</div><div class="s">Select words → verbatim-quote anchor. Best tool for copy edits.</div><span class="chip c-plan">planned</span></div>
+          <div class="item"><span class="ph">P5</span><div class="t">Photo attachments</div><div class="s">Upload to the Storage bucket; downscale client-side; IndexedDB offline queue.</div><span class="chip c-plan">planned</span></div>
+          <div class="item"><span class="ph">P6</span><div class="t">Box + freehand tools</div><div class="s">Region drag &amp; scribble, on the same anchor model.</div><span class="chip c-plan">planned</span></div>
+          <div class="item"><span class="ph">P6</span><div class="t">console.html + dashboard.html</div><div class="s">Mint a project key + copy the snippet; triage notes in a browser.</div><span class="chip c-plan">planned</span></div>
+          <div class="item"><span class="ph">P6</span><div class="t">GHL paste-block generator</div><div class="s">Produce a ready-to-paste inline embed for a client's GHL Custom-HTML.</div><span class="chip c-plan">planned</span></div>
+        </div>
+
+        <div class="col">
+          <h3><span class="dot" style="background:var(--idea)"></span> Ideas / backlog</h3>
+          <div class="item"><div class="t">Instant live updates</div><div class="s">DB-trigger broadcast (Realtime Authorization) so "resolved" appears without a refresh.</div><span class="chip c-idea">idea</span></div>
+          <div class="item"><div class="t">Threaded replies</div><div class="s">Back-and-forth on a note (schema already supports <code>comments</code>).</div><span class="chip c-idea">idea</span></div>
+          <div class="item"><div class="t">Named reviewers</div><div class="s">Optional Supabase Auth magic-link + per-person permissions.</div><span class="chip c-idea">idea</span></div>
+          <div class="item"><div class="t">Multi-page sites</div><div class="s">Partition notes &amp; feedback.md by page for non-single-page clients.</div><span class="chip c-idea">idea</span></div>
+          <div class="item"><div class="t">Per-host CSP check</div><div class="s">Detect a host Content-Security-Policy that would block the embed.</div><span class="chip c-idea">idea</span></div>
+          <div class="item"><div class="t">Attachment garbage-collection</div><div class="s">Clean up photos orphaned by failed note saves.</div><span class="chip c-idea">idea</span></div>
+          <div class="item"><div class="t">Mobile de-clustering</div><div class="s">Collapse nearby pins into an "n+" cluster on small screens.</div><span class="chip c-idea">idea</span></div>
+          <div class="item"><div class="t">Email / notification on new note</div><div class="s">Ping you when a reviewer leaves feedback.</div><span class="chip c-idea">idea</span></div>
+        </div>
+      </div>
+
+      <div class="note">💡 This board is just HTML — add an <code>.item</code> under any column, or tell Claude "add X to the roadmap" and it'll edit <code>internal.html</code>.</div>
+    </section>
+
+    <p class="foot">Website Review tool · internal reference · see <code>PLAN.md</code> for the full spec.</p>
+  </div>
+
+  <script>
+    (function(){
+      var TOKENS = ['#build','#internal','#dev'];
+      function revealed(){ return TOKENS.indexOf(location.hash) !== -1; }
+      function sync(){
+        var on = revealed();
+        document.getElementById('gate').hidden = on;
+        document.getElementById('app').hidden = !on;
+        document.title = on ? 'Website Review — internal' : '·';
+      }
+      window.addEventListener('hashchange', sync);
+      sync();
+
+      var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+      tabs.forEach(function(t){
+        t.addEventListener('click', function(){
+          tabs.forEach(function(x){ x.setAttribute('aria-selected', x===t ? 'true':'false'); });
+          document.getElementById('pane-how').hidden     = t.dataset.pane !== 'how';
+          document.getElementById('pane-roadmap').hidden = t.dataset.pane !== 'roadmap';
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
