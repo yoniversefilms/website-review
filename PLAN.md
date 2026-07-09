@@ -209,9 +209,15 @@ note (photos queue in IndexedDB, which has room; localStorage doesn't).
 **Phase 0 — reconciled `schema.sql` — DONE.** Tables + RLS + storage policy + grants +
 realtime + `replica identity full`. Ruth project provisioned via the SQL Editor.
 
-**Phase 1 — Prove Supabase round-trips, no UI (`smoke-test.html`).** createClient with
-the board header, insert a note, subscribe, see the realtime event; test a wrong key
-returns zero rows. De-risks the backend.
+**Phase 1 — Prove Supabase round-trips (`smoke-test.html`) — DONE (6/7).** createClient
+with the board header; insert / select / RLS-isolation (wrong key → 0 rows) all pass
+against the live DB. **Finding:** realtime live-push did NOT deliver — the `x-board-key`
+capability header rides on REST calls but not on the realtime WebSocket, so realtime's
+RLS check can't see the board key. Non-critical: the core loop uses no realtime, and the
+widget will **refetch-on-load + on-focus** instead. Instant updates, if wanted, come later
+via a DB-trigger **broadcast** (Realtime Authorization) that doesn't depend on header RLS
+— deferred to Phase 6. (HomeApp shares this latent limitation; its docs call realtime
+"optional.")
 
 **Phase 2 — Widget: pin capture, end to end (~2 days).** Shadow-DOM mount on the Ruth
 site, one pin tool, name gate, composer, save to Supabase + localStorage, render pins on
