@@ -1,9 +1,12 @@
+<!-- Website Review widget — GHL paste block. Paste into your funnel/site > Settings > Tracking Code > BODY (footer) field, then Save + Re-publish. Dormant for visitors; loads nothing until the page URL has ?review=<project_key>. Regenerate with build-ghl-block.sh; do not hand-edit the script below. -->
+<script>window.WR_CONFIG={supabaseUrl:"https://vfdhlrikxcdturtvyxel.supabase.co",supabaseAnon:"sb_publishable_fwm9wkESvRdRLFNcnDC64A_vkpcdELa",me:"Reviewer"};</script>
+<script>
 /* =====================================================================
  * Website Review — embed widget  (Phase 2: point-pin tool)
  * ---------------------------------------------------------------------
  * Paste into any site you control, before </body>:
- *   <script>window.WR_CONFIG = { supabaseUrl:"…", supabaseAnon:"…" };</script>
- *   <script src=".../embed.js" data-review-key="<project_key>" defer></script>
+ *   <script>window.WR_CONFIG = { supabaseUrl:"…", supabaseAnon:"…" };<\/script>
+ *   <script src=".../embed.js" data-review-key="<project_key>" defer><\/script>
  * The widget stays DORMANT unless a project key is present via:
  *   ?review=<key>  |  data-review-key="…" on this tag  |  WR_CONFIG.projectKey
  * Reuses the HomeApp capability-URL model (key => x-board-key header + RLS).
@@ -346,3 +349,4 @@
   // expose a tiny handle for debugging / headless tests
   window.__wr = { arm: arm, notes: function () { return notes; }, fetch: fetchNotes, board: BOARD };
 })();
+</script>
