@@ -34,8 +34,8 @@ See **[PLAN.md](PLAN.md)** for the full design and rationale.
 ## Build status
 
 - [x] **Phase 0** — `schema.sql`: data model, RLS, storage, realtime
-- [ ] **Phase 1** — Supabase round-trip smoke test (`smoke-test.html`)
-- [ ] **Phase 2** — widget: pin capture, end-to-end on the Ruth site
+- [x] **Phase 1** — Supabase round-trip smoke test (`smoke-test.html`) — verified 6/7
+- [x] **Phase 2** — widget (`embed.js`): pin capture, end-to-end on the Ruth site — verified
 - [ ] **Phase 3** — `sync.mjs` pull → `feedback.md` → Claude proposes an edit
 - [ ] **Phase 4** — approve + push status back (reviewer sees "resolved" live)
 - [ ] **Phase 5** — text-highlight tool + photo uploads
