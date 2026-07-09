@@ -151,12 +151,18 @@ alter table public.notes       enable row level security;
 alter table public.comments    enable row level security;
 alter table public.attachments enable row level security;
 
--- PROJECTS: read + update your OWN row only. No insert (no self-provisioning),
--- no reading/enumerating other projects.
+-- PROJECTS: a site self-registers its OWN board and reads/updates only that row;
+-- it cannot read or enumerate other projects. Self-INSERT is scoped to the key the
+-- caller presents (its own domain), which is what enables the "universal snippet"
+-- model — paste the same block anywhere and the site registers itself. (The key is
+-- the public domain, so this is capability-by-obscurity, chosen for zero-setup.)
 drop policy if exists projects_self_read   on public.projects;
+drop policy if exists projects_self_insert on public.projects;
 drop policy if exists projects_self_update on public.projects;
 create policy projects_self_read on public.projects
   for select using ( project_key = public.board_key() );
+create policy projects_self_insert on public.projects
+  for insert with check ( project_key = public.board_key() );
 create policy projects_self_update on public.projects
   for update using      ( project_key = public.board_key() )
              with check ( project_key = public.board_key() );
@@ -220,7 +226,7 @@ using (
 -- 7. GRANTS  (RLS still governs WHICH rows; grants open the verbs)
 -- =====================================================================
 grant usage on schema public to anon;
-grant select, update                       on public.projects    to anon;  -- no insert/delete
+grant select, insert, update               on public.projects    to anon;  -- self-register own board; no delete
 grant select, insert, update, delete       on public.notes       to anon;
 grant select, insert, delete               on public.comments    to anon;
 grant select, insert, delete               on public.attachments to anon;

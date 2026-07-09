@@ -4,9 +4,11 @@
  * Paste into any site you control, before </body>:
  *   <script>window.WR_CONFIG = { supabaseUrl:"…", supabaseAnon:"…" };</script>
  *   <script src=".../embed.js" data-review-key="<project_key>" defer></script>
- * The widget stays DORMANT unless a project key is present via:
- *   ?review=<key>  |  data-review-key="…" on this tag  |  WR_CONFIG.projectKey
- * Reuses the HomeApp capability-URL model (key => x-board-key header + RLS).
+ * DORMANT for normal visitors; activates only when the page URL has ?review
+ * (any value). The review board = the site's own domain, so ONE universal
+ * snippet works on every site with no per-site key. Optional overrides:
+ * ?board=<id>, data-review-key on the tag, or WR_CONFIG.projectKey.
+ * Scopes via the x-board-key header + Supabase RLS (HomeApp model).
  * ===================================================================== */
 (function () {
   "use strict";
@@ -14,17 +16,25 @@
 
   var CFG = window.WR_CONFIG || {};
   var thisScript = document.currentScript;
-  var BOARD =
-    new URLSearchParams(location.search).get("review") ||
-    (thisScript && thisScript.getAttribute("data-review-key")) ||
-    CFG.projectKey || "";
+  var params = new URLSearchParams(location.search);
 
-  if (!BOARD) return;                        // dormant: no key => nothing loads (not even supabase-js)
+  // Activate ONLY in review mode — dormant (nothing loads) for normal visitors.
+  if (!params.has("review") && !CFG.alwaysOn) return;
+
+  // Board identity = the site's own domain (universal snippet, zero per-site setup).
+  // Optional explicit overrides: ?board=, data-review-key, or WR_CONFIG.projectKey.
+  function normHost(h) { return String(h || "").replace(/^www\./i, "").toLowerCase() || "localhost"; }
+  var BOARD =
+    params.get("board") ||
+    (thisScript && thisScript.getAttribute("data-review-key")) ||
+    CFG.projectKey ||
+    normHost(location.hostname);
+
   if (!CFG.supabaseUrl || !CFG.supabaseAnon) {
     console.warn("[review] WR_CONFIG.supabaseUrl / supabaseAnon missing — widget off.");
     return;
   }
-  window.__wrLoaded = true;                  // claim the mount only now (dormant runs don't poison a later ?review nav)
+  window.__wrLoaded = true;                  // claim the mount only now (dormant runs don't poison a later activation)
 
   /* ---------------- identity + local cache (no login) ---------------- */
   var LS = { name: "wr:name", aid: "wr:aid", notes: "wr:notes:" + BOARD };
@@ -330,6 +340,11 @@
     supa = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnon, {
       global: { headers: { "x-board-key": BOARD } }
     });
+    // Self-register this site as a review board (idempotent) so notes have a home.
+    supa.from("projects").upsert(
+      { project_key: BOARD, name: document.title || BOARD, site_host: BOARD },
+      { onConflict: "project_key" }
+    ).then(function (r) { if (r.error) console.warn("[review] board register:", r.error.message); });
     fetchNotes();
   });
   window.addEventListener("focus", fetchNotes);

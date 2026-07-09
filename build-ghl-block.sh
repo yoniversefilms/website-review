@@ -9,7 +9,7 @@ SUPABASE_URL="https://vfdhlrikxcdturtvyxel.supabase.co"
 SUPABASE_KEY="sb_publishable_fwm9wkESvRdRLFNcnDC64A_vkpcdELa"
 
 {
-  printf '%s\n' '<!-- Website Review widget — GHL paste block. Paste into your funnel/site > Settings > Tracking Code > BODY (footer) field, then Save + Re-publish. Dormant for visitors; loads nothing until the page URL has ?review=<project_key>. Regenerate with build-ghl-block.sh; do not hand-edit the script below. -->'
+  printf '%s\n' '<!-- Website Review widget — ONE universal GHL block (same on every site). Paste into your funnel/site > Settings > Tracking Code > BODY (footer) field, then Save + Re-publish. Dormant for visitors; loads nothing until the page URL has ?review (any value). The review board = the site domain, so no per-site key. Regenerate with build-ghl-block.sh; do not hand-edit the script below. -->'
   printf '<script>window.WR_CONFIG={supabaseUrl:"%s",supabaseAnon:"%s",me:"Reviewer"};</script>\n' "$SUPABASE_URL" "$SUPABASE_KEY"
   printf '%s\n' '<script>'
   sed 's#</script>#<\\/script>#g' embed.js
