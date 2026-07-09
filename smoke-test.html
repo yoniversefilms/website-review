@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Review tool — Supabase smoke test</title>
+<style>
+  :root { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  body { margin: 0; padding: 24px; background: #0f1115; color: #e6e6e6; }
+  h1 { font-size: 16px; margin: 0 0 4px; }
+  p.sub { color: #8a93a3; margin: 0 0 18px; font-size: 12px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+  input { background:#1a1d24; border:1px solid #2b303b; color:#e6e6e6; padding:8px 10px;
+          border-radius:8px; font: inherit; min-width: 340px; }
+  button { background:#2b6cff; color:#fff; border:0; padding:9px 14px; border-radius:8px;
+           font: inherit; cursor:pointer; }
+  button.secondary { background:#2b303b; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  #log { background:#0a0c10; border:1px solid #1e222b; border-radius:10px; padding:14px;
+         white-space:pre-wrap; font-size:12.5px; line-height:1.55; min-height:240px; }
+  .ok  { color:#48d597; } .err { color:#ff6b6b; } .dim { color:#8a93a3; } .warn{ color:#ffce54; }
+</style>
+</head>
+<body>
+  <h1>Website Review — Supabase smoke test (Phase 1)</h1>
+  <p class="sub">Proves: client init · project-key validation · insert · select · realtime · RLS isolation (wrong key → 0 rows).</p>
+
+  <div class="row">
+    <input id="key" placeholder="paste your project_key (the UUID from schema.sql)" />
+    <button id="run">Run all tests</button>
+    <button id="clear" class="secondary">Clear</button>
+  </div>
+
+  <div id="log"></div>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+  const C = window.WR_CONFIG || {};
+  const $ = s => document.querySelector(s);
+  const logEl = $("#log");
+  function log(msg, cls="dim"){ const l=document.createElement("div"); if(cls)l.className=cls;
+    l.textContent = msg; logEl.appendChild(l); logEl.scrollTop = logEl.scrollHeight; }
+  function clientFor(boardKey){
+    return window.supabase.createClient(C.supabaseUrl, C.supabaseAnon, {
+      global: { headers: { "x-board-key": boardKey } },
+      realtime: { params: { eventsPerSecond: 5 } }
+    });
+  }
+
+  // Exposed so it can be driven headlessly (preview_eval) as well as by the button.
+  window.smoke = {};
+  window.smoke.run = async function(boardKey){
+    logEl.innerHTML = "";
+    const results = [];
+    const pass = (n)=>{ results.push(true);  log("✓ "+n, "ok"); };
+    const fail = (n,e)=>{ results.push(false); log("✗ "+n+" — "+(e?.message||e), "err"); };
+
+    if(!C.supabaseUrl || !C.supabaseAnon){ fail("config.js has supabaseUrl + supabaseAnon"); return; }
+    if(!boardKey){ fail("project_key provided", "paste the UUID first"); return; }
+    log("config: "+C.supabaseUrl, "dim");
+    log("board:  "+boardKey, "dim");
+    log("——", "dim");
+
+    const supa = clientFor(boardKey);
+
+    // 1. supabase-js loaded + client created
+    try { if(!supa) throw new Error("no client"); pass("supabase-js loaded, client created"); }
+    catch(e){ return fail("supabase-js loaded", e); }
+
+    // 2. project key is valid (its projects row is readable under this key)
+    try {
+      const { data, error } = await supa.from("projects").select("project_key,name").eq("project_key", boardKey);
+      if(error) throw error;
+      if(!data || !data.length) throw new Error("no project row visible — is the key right & schema run?");
+      pass('project key valid — "'+data[0].name+'"');
+    } catch(e){ fail("project key valid", e); log("stop: fix the key/schema, then re-run.", "warn"); return; }
+
+    // 3. realtime subscribe, then insert; expect a live event for our row
+    let gotRealtime = false, insertedId = null;
+    const chan = supa.channel("smoke:"+boardKey)
+      .on("postgres_changes",
+          { event:"INSERT", schema:"public", table:"notes", filter:"project_key=eq."+boardKey },
+          (p)=>{ if(p.new && p.new.id === insertedId) gotRealtime = true; });
+    try {
+      await new Promise((res,rej)=>{ chan.subscribe((st)=>{ if(st==="SUBSCRIBED")res(); if(st==="CHANNEL_ERROR")rej(new Error("channel error")); });
+        setTimeout(()=>rej(new Error("subscribe timeout")), 8000); });
+      pass("realtime channel subscribed");
+    } catch(e){ fail("realtime subscribe", e); }
+
+    // 4. insert a pin note
+    try {
+      const { data, error } = await supa.from("notes").insert({
+        project_key: boardKey, kind:"pin", page_url:"/smoke-test",
+        section_id:"about", target_text:"smoke", elem_desc:"smoke-test pin",
+        geometry:{x:0.5,y:0.5}, body:"smoke-test note "+Date.now(),
+        author:"smoke-test", author_id:"smoke"
+      }).select();
+      if(error) throw error;
+      insertedId = data[0].id;
+      pass("insert note (id "+insertedId.slice(0,8)+"…)");
+    } catch(e){ fail("insert note", e); }
+
+    // 5. select it back
+    try {
+      const { data, error } = await supa.from("notes").select("*").eq("project_key", boardKey);
+      if(error) throw error;
+      if(!data.some(n=>n.id===insertedId)) throw new Error("inserted note not found on select");
+      pass("select notes ("+data.length+" for this board)");
+    } catch(e){ fail("select notes", e); }
+
+    // 6. give realtime a moment to arrive
+    await new Promise(r=>setTimeout(r, 1500));
+    gotRealtime ? pass("realtime event received for the insert")
+               : fail("realtime event received", "no event in 1.5s (RLS/publication?)");
+
+    // 7. RLS ISOLATION — a different (random) key must see zero of our rows
+    try {
+      const other = clientFor(crypto.randomUUID());
+      const { data, error } = await other.from("notes").select("*").eq("project_key", boardKey);
+      if(error) throw error;               // a select with a wrong key returns [] (not an error)
+      if(data && data.length) throw new Error("LEAK: wrong key saw "+data.length+" rows!");
+      pass("RLS isolation — wrong key sees 0 rows");
+    } catch(e){ fail("RLS isolation", e); }
+
+    // 8. cleanup the smoke row (nice, not required)
+    try { if(insertedId){ await supa.from("notes").delete().eq("id", insertedId); log("cleaned up the smoke row.", "dim"); } } catch(_){}
+    supa.removeChannel(chan);
+
+    log("——", "dim");
+    const passed = results.filter(Boolean).length;
+    log(passed+" / "+results.length+" passed", passed===results.length ? "ok" : "err");
+    return { passed, total: results.length };
+  };
+
+  // wire UI
+  const pre = new URLSearchParams(location.search).get("review") || "";
+  if(pre) $("#key").value = pre;
+  $("#run").onclick   = ()=> window.smoke.run($("#key").value.trim());
+  $("#clear").onclick = ()=> logEl.innerHTML = "";
+  log("ready — paste your project_key and hit “Run all tests”.", "dim");
+  </script>
+</body>
+</html>

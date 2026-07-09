@@ -228,16 +228,29 @@ grant execute on function public.board_key() to anon;
 
 -- =====================================================================
 -- 8. REALTIME  (one channel per board subscribes to these three tables)
+--    Wrapped so re-running the whole script is safe — "add table" is NOT
+--    idempotent (42710 = table already a member of the publication).
 -- =====================================================================
-alter publication supabase_realtime add table public.notes;
-alter publication supabase_realtime add table public.comments;
-alter publication supabase_realtime add table public.attachments;
+do $$ begin
+  alter publication supabase_realtime add table public.notes;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter publication supabase_realtime add table public.comments;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter publication supabase_realtime add table public.attachments;
+exception when duplicate_object then null; end $$;
 
 -- =====================================================================
 -- 9. PROVISION A PROJECT  (run per client, service role. Copy the key.)
 --    Re-run "select project_key,name from public.projects;" any time to
 --    recover a key you lost.
 -- =====================================================================
+-- Create the Ruth project only if it doesn't already exist (safe to re-run),
+-- then show every project's key.
 insert into public.projects (project_key, name, site_host)
-values (gen_random_uuid()::text, 'Ruth — coaching site', 'ruthpedida.co.il')
-returning project_key;   -- <- paste this into the reviewer link / embed snippet
+select gen_random_uuid()::text, 'Ruth — coaching site', 'ruthpedida.co.il'
+where not exists (select 1 from public.projects where name = 'Ruth — coaching site');
+
+select project_key, name from public.projects order by created_at;
+-- ^ copy the project_key next to 'Ruth — coaching site' into the reviewer link / embed.
