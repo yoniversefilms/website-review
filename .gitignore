@@ -2,3 +2,7 @@
 node_modules/
 config.local.js
 *.log
+
+# Phase 3 local review pulls (per reviewed site)
+reviews/*/feedback.json
+reviews/*/photos/

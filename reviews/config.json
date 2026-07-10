@@ -1,0 +1,10 @@
+{
+  "supabaseUrl": "https://vfdhlrikxcdturtvyxel.supabase.co",
+  "anonKey": "sb_publishable_fwm9wkESvRdRLFNcnDC64A_vkpcdELa",
+  "projects": {
+    "ruth": {
+      "board": "ruthpedida.co.il",
+      "out": "/Users/yonatanresnick/Documents/Ruth/Website/reviews/ruth"
+    }
+  }
+}
