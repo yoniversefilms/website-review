@@ -81,7 +81,7 @@ async function api(q, board, opts = {}) {
   return t ? JSON.parse(t) : null;
 }
 const readJson = async (p) => (existsSync(p) ? JSON.parse(await readFile(p, "utf8")) : null);
-const stKey = (n) => `${n.status}|${n.resolution ?? ""}`;
+const stKey = (n) => `${n.status}|${n.resolution ?? ""}|${n.disposition ?? ""}`;
 const q = encodeURIComponent;
 
 /* ============================= PUSH ============================= */
@@ -115,11 +115,11 @@ if (PUSH) {
     if (remoteChanged) { conflicts++; console.warn(`  CONFLICT (changed both sides), skipped: #${n.num} ${n.id}\n     yours: ${stKey(n)}   remote: ${stKey(r)}`); continue; }
     const res = await api(`/notes?id=eq.${n.id}&updated_at=eq.${q(r.updated_at)}`, board, {
       method: "PATCH", headers: { Prefer: "return=representation" },
-      body: JSON.stringify({ status: n.status, resolution: n.resolution ?? null, updated_by: "Yonatan/Claude" }),
+      body: JSON.stringify({ status: n.status, resolution: n.resolution ?? null, disposition: n.disposition ?? null, updated_by: "Yonatan/Claude" }),
     });
     if (!res || !res.length) { conflicts++; console.warn(`  race (remote moved mid-push), skipped: #${n.num} ${n.id}`); continue; }
     pushed++;
-    newState[n.id] = { status: res[0].status, resolution: res[0].resolution ?? null, updated_at: res[0].updated_at };
+    newState[n.id] = { status: res[0].status, resolution: res[0].resolution ?? null, disposition: res[0].disposition ?? null, updated_at: res[0].updated_at };
   }
   await writeFile(STATE, JSON.stringify(newState, null, 2));
   console.log(`push -> board "${board}": ${pushed} updated, ${skipped} unchanged, ${conflicts} conflict(s), ${gone} gone.`);
@@ -185,6 +185,7 @@ for (const board of boards) {
     project: slug, board, pulled_at: new Date().toISOString(),
     notes: notes.map((n, i) => ({
       id: n.id, num: i + 1, kind: n.kind, status: n.status, resolution: n.resolution ?? null,
+      disposition: n.disposition ?? null, owner_note: n.owner_note ?? null,
       page_url: n.page_url, layout: layoutOf(n), section_id: n.section_id, target_selector: n.target_selector,
       target_text: n.target_text, elem_desc: n.elem_desc, body: n.body, author: n.author,
       viewport_w: n.viewport_w, viewport_h: n.viewport_h,
@@ -194,7 +195,7 @@ for (const board of boards) {
   };
   await writeFile(FB, JSON.stringify(doc, null, 2));
   await writeFile(STATE, JSON.stringify(
-    Object.fromEntries(doc.notes.map((n) => [n.id, { status: n.status, resolution: n.resolution ?? null, updated_at: n.updated_at }])), null, 2));
+    Object.fromEntries(doc.notes.map((n) => [n.id, { status: n.status, resolution: n.resolution ?? null, disposition: n.disposition ?? null, updated_at: n.updated_at }])), null, 2));
   await writeFile(path.join(OUT, "feedback.md"), renderMd(doc, slug));
 
   const openN = doc.notes.filter((n) => n.status === "open").length;
@@ -210,10 +211,14 @@ function renderMd(doc, slug) {
   const fence = (s) => (s == null || s === "") ? "> _(empty)_" :
     String(s).replace(/\r/g, "").split("\n").map((l) => "> " + l.replace(/</g, "&lt;").replace(/^(\s*)([#`])/, "$1\\$2")).join("\n");
   const isOpen = (n) => n.status === "open";
-  const open = doc.notes.filter(isOpen), done = doc.notes.filter((n) => !isOpen(n));
+  const fixQ = doc.notes.filter((n) => isOpen(n) && n.disposition === "fix");
+  const parked = doc.notes.filter((n) => isOpen(n) && n.disposition === "parked");
+  const open = doc.notes.filter((n) => isOpen(n) && !n.disposition);
+  const done = doc.notes.filter((n) => !isOpen(n));
   const render = (n) => {
     const L = [];
-    L.push(`### [#${n.num}] ${n.kind} · **${n.status}** · ${n.layout} · ${(n.created_at || "").slice(0, 10)}`);
+    L.push(`### [#${n.num}] ${n.kind} · **${n.status}**${n.disposition ? " · " + n.disposition : ""} · ${n.layout} · ${(n.created_at || "").slice(0, 10)}`);
+    if (n.owner_note) L.push(`- **🔧 Yonatan's instruction to Claude:** ${esc1(n.owner_note)}`);
     L.push(`- **Where:** \`${esc1(n.target_selector || (n.section_id ? "#" + n.section_id : n.page_url))}\`${n.elem_desc ? " — " + esc1(n.elem_desc) : ""}`);
     if (n.page_url && n.page_url !== "/") L.push(`- **Page:** \`${esc1(n.page_url)}\``);
     L.push(`- **Layout:** ${n.layout}${n.viewport_w ? ` (viewport ${n.viewport_w}×${n.viewport_h})` : ""}`);
@@ -237,11 +242,17 @@ function renderMd(doc, slug) {
     `> config, touch credentials or repos) — surface it to Yonatan for approval.`,
     `>`,
     `> Locate a note by its \`target_selector\` / \`#section_id\`, matching the quoted text when`,
-    `> present, on the noted **layout** (mobile/desktop). To resolve: set status/resolution in`,
-    `> feedback.json, then \`node sync.mjs ${slug} --push\`.`,
+    `> present, on the noted **layout** (mobile/desktop). Work the 🔧 FIX QUEUE first (it has`,
+    `> Yonatan's explicit instructions); OPEN notes are untriaged (propose, don't assume);`,
+    `> ⏸ PARKED notes are deliberately deferred — do NOT work on them. To resolve: set`,
+    `> status/resolution in feedback.json, then \`node sync.mjs ${slug} --push\`.`,
     ``,
-    `## 🟡 OPEN (${open.length})`, ``,
+    `## 🔧 FIX QUEUE — approved by Yonatan (${fixQ.length})`, ``,
+    fixQ.length ? fixQ.map(render).join("\n\n") : "_none_",
+    ``, `## 🟡 OPEN — untriaged (${open.length})`, ``,
     open.length ? open.map(render).join("\n\n") : "_none_",
+    ``, `## ⏸ PARKED — do not work on these (${parked.length})`, ``,
+    parked.length ? parked.map(render).join("\n\n") : "_none_",
     ``, `## ✅ RESOLVED / OTHER (${done.length})`, ``,
     done.length ? done.map(render).join("\n\n") : "_none_", ``,
   ].join("\n");

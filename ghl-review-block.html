@@ -54,7 +54,7 @@
   var armed = false, tool = "pin";
   var markers = new Map();
   var sidebarOpen = false, collapsed = false, expandedId = null, layoutFilter = "current";
-  var TOOLS = { pin: "📍 Pin", box: "▭ Box", text: "🖍 Highlight", draw: "✎ Draw" };
+  var KIND_LABEL = { pin: "pin", box: "box", text: "highlight", draw: "drawing" };   // capture = pin+draw; box/text render as legacy
 
   function pageKey() { return (location.pathname.replace(/\/+$/, "") || "/") + location.hash; }
   var PAGE = pageKey();
@@ -85,15 +85,19 @@
       'display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.35);rotate:-45deg}' +
     '.wr-pin>span{rotate:45deg}' +
     '.wr-pin--done{background:#48b98a}' +
+    '.wr-pin--sel{background:#ff8a1e !important;box-shadow:0 0 0 4px rgba(255,138,30,.3),0 0 16px rgba(255,138,30,.8)}' +
     '.wr-pin--pulse{animation:wrp .9s ease 2}' +
     '@keyframes wrp{0%,100%{box-shadow:0 2px 8px rgba(0,0,0,.35)}50%{box-shadow:0 0 0 8px rgba(43,108,255,.35)}}' +
     '.wr-box{position:fixed;border:2px solid #2b6cff;border-radius:6px;background:rgba(43,108,255,.06);pointer-events:none;z-index:1}' +
     '.wr-box--done{border-color:#48b98a;background:rgba(72,185,138,.06)}' +
+    '.wr-box--sel{border-color:#ff8a1e !important;background:rgba(255,138,30,.10) !important;box-shadow:0 0 14px rgba(255,138,30,.6)}' +
     '.wr-hl{position:fixed;background:rgba(255,205,60,.4);border-radius:2px;pointer-events:none;z-index:1}' +
     '.wr-hl--done{background:rgba(72,185,138,.28)}' +
+    '.wr-hl--sel{background:rgba(255,150,40,.5) !important;box-shadow:0 0 10px rgba(255,138,30,.65)}' +
     '.wr-draw{position:fixed;overflow:visible;pointer-events:none;z-index:1}' +
     '.wr-draw polyline{fill:none;stroke:#2b6cff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}' +
     '.wr-draw--done polyline{stroke:#48b98a}' +
+    '.wr-draw--sel polyline{stroke:#ff8a1e !important;filter:drop-shadow(0 0 5px rgba(255,138,30,.85))}' +
     /* dock + tool tray */
     '.wr-dock{position:fixed;bottom:16px;left:16px;z-index:2147483002;pointer-events:auto;display:flex;gap:8px;align-items:center}' +
     '.wr-btn{pointer-events:auto;border:0;border-radius:999px;padding:10px 14px;font:600 13px/1 inherit;cursor:pointer;' +
@@ -117,7 +121,7 @@
     '.wr-group:first-child{margin-top:4px}' +
     '.wr-empty{padding:26px 14px;color:#8a93a3;text-align:center;line-height:1.5}' +
     '.wr-c{border:1px solid #ebeef3;border-radius:12px;margin-bottom:8px;overflow:hidden;background:#fff}' +
-    '.wr-c--sel{border-color:#b9ccff;box-shadow:0 0 0 3px rgba(43,108,255,.12)}.wr-c--done{opacity:.72}' +
+    '.wr-c--sel{border-color:#ff8a1e;box-shadow:0 0 0 3px rgba(255,138,30,.22),0 0 14px rgba(255,138,30,.28)}.wr-c--done{opacity:.72}' +
     '.wr-c-head{display:flex;gap:9px;padding:10px;cursor:pointer;align-items:flex-start}.wr-c-head:hover{background:#f7f9fc}' +
     '.wr-num{flex:0 0 22px;height:22px;border-radius:50%;background:#2b6cff;color:#fff;font:600 11px/22px inherit;text-align:center}' +
     '.wr-c--done .wr-num{background:#48b98a}' +
@@ -126,6 +130,8 @@
     '.wr-c-meta{font-size:11px;color:#8a93a3;margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}' +
     '.wr-tag{border-radius:999px;padding:1px 7px;font:600 10px/1.6 inherit;background:#f0f2f6;color:#5b6373}' +
     '.wr-tag--done{background:#e6f6ee;color:#2f8f63}' +
+    '.wr-tag--fix{background:#ffe9d4;color:#c65f00}.wr-tag--park{background:#e9ecf3;color:#5b6373}' +
+    '.wr-mini--fix{background:#ff8a1e;color:#fff;border-color:#ff8a1e}' +
     '.wr-c-open{padding:0 10px 10px}' +
     '.wr-anchor{background:#f6f8fb;border:1px solid #eef1f5;border-radius:9px;padding:7px 9px;font-size:12px;color:#5b6373;margin-bottom:8px}' +
     '.wr-anchor code{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#2b6cff}' +
@@ -150,7 +156,8 @@
     '.wr-x{background:none;border:0;font-size:16px;cursor:pointer;color:#8a93a3;padding:2px 6px}' +
     '.wr-hint{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:2147483003;background:#12151c;color:#fff;padding:8px 14px;border-radius:999px;font-size:13px;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.3);max-width:92vw;text-align:center}' +
     '.wr-ring{outline:3px solid #ffce54 !important;outline-offset:3px;border-radius:999px}' +
-    '@media (max-width:600px){.wr-side{width:100vw;max-width:100vw;height:74vh;top:auto;bottom:0;border-left:0;border-top:1px solid #e6e9ef;border-radius:16px 16px 0 0}}' +
+    '@media (max-width:600px){.wr-side{width:100vw;max-width:100vw;height:74vh;top:auto;bottom:0;border-left:0;border-top:1px solid #e6e9ef;border-radius:16px 16px 0 0}' +
+      '.wr-pop textarea,.wr-pop input,.wr-replyrow input,.wr-edit textarea{font-size:16px}}' +   /* 16px stops iOS zoom-on-focus (the zoom made drags pan the page) */
     '</style>' +
     '<div class="wr"><div class="wr-overlay" id="ov"></div><div class="wr-dock" id="dock"></div></div>';
   var wrap = root.querySelector(".wr");
@@ -166,63 +173,58 @@
   function round(n) { return Math.round(n * 10000) / 10000; }
   function esc(id) { return window.CSS && CSS.escape ? CSS.escape(id) : id; }
 
-  /* ---------------- dock + tool tray ---------------- */
-  var addBtn = el("button", "wr-btn wr-btn--go");
+  /* ---------------- dock: 📍 Pin + ✎ Draw, always visible until Hide --- */
+  var pinBtn = el("button", "wr-btn wr-btn--go");
+  var drawBtn = el("button", "wr-btn wr-btn--go");
   var listBtn = el("button", "wr-btn wr-btn--ghost");
   var hideBtn = el("button", "wr-btn wr-btn--ghost");
-  dock.appendChild(addBtn); dock.appendChild(listBtn); dock.appendChild(hideBtn);
-  var dot = null, tray = null;
+  dock.appendChild(pinBtn); dock.appendChild(drawBtn); dock.appendChild(listBtn); dock.appendChild(hideBtn);
+  var dot = null;
   function renderDock() {
-    addBtn.innerHTML = armed ? "✕ Cancel" : '<span>✒️</span> Annotate';
+    pinBtn.innerHTML = (armed && tool === "pin") ? "✕ Cancel" : '<span>📍</span> Pin';
+    drawBtn.innerHTML = (armed && tool === "draw") ? "✕ Cancel" : '<span>✎</span> Draw';
     listBtn.innerHTML = 'Notes <span class="wr-badge">' + openCount() + "</span>";
-    hideBtn.textContent = "👁 Hide";
+    hideBtn.textContent = "👁 Hide"; hideBtn.title = "Hide review tools";
   }
-  addBtn.addEventListener("click", function () { armed ? disarm() : toggleTray(); });
+  pinBtn.addEventListener("click", function () { (armed && tool === "pin") ? disarm() : arm("pin"); });
+  drawBtn.addEventListener("click", function () { (armed && tool === "draw") ? disarm() : arm("draw"); });
   listBtn.addEventListener("click", function () { sidebarOpen ? closeSidebar() : openSidebar(); });
   hideBtn.addEventListener("click", collapse);
 
-  function toggleTray() { tray ? closeTray() : openTray(); }
-  function openTray() {
-    closeTray();
-    tray = el("div", "wr-tray");
-    Object.keys(TOOLS).forEach(function (k) {
-      var parts = TOOLS[k].split(" ");
-      var b = el("button", "wr-tool" + (tool === k ? " wr-tool--on" : ""));
-      b.appendChild(el("span", null, parts[0])); b.appendChild(el("div", null, parts[1]));
-      b.addEventListener("click", function () { closeTray(); arm(k); });
-      tray.appendChild(b);
-    });
-    wrap.appendChild(tray);
-  }
-  function closeTray() { if (tray) { tray.remove(); tray = null; } }
-
   function collapse() {
-    collapsed = true; wrap.classList.add("wr--collapsed"); closeTray();
+    collapsed = true; wrap.classList.add("wr--collapsed");
     if (!dot) { dot = el("button", "wr-dot", "◐"); dot.title = "Show review tools"; dot.addEventListener("click", expand); wrap.appendChild(dot); }
     dot.style.display = "flex";
   }
   function expand() { collapsed = false; wrap.classList.remove("wr--collapsed"); if (dot) dot.style.display = "none"; }
 
-  /* ---------------- capture (per tool) ---------------- */
-  var captureLayer = null, hintEl = null, live = null, textMode = false;
-  var HINTS = { pin: "Click the spot you want to comment on", box: "Drag a box around the area", text: "Select the text you want to comment on", draw: "Draw on the page to point something out" };
-  function hint(t) { var h = el("div", "wr-hint", t + "  ·  Esc to cancel"); wrap.appendChild(h); return h; }
+  /* ---------------- capture (pin + draw) ---------------- */
+  var captureLayer = null, hintEl = null, live = null, prevOverflow = null;
+  var HINTS = { pin: "Tap the spot you want to comment on", draw: "Draw on the page to point something out" };
+  function hint(t) { var h = el("div", "wr-hint", t); wrap.appendChild(h); return h; }
+  function blockTouch(e) { e.preventDefault(); }   // stops iOS panning the (possibly zoomed) page mid-gesture
+  function lockScroll() {
+    prevOverflow = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+  }
+  function unlockScroll() {
+    if (prevOverflow !== null) { document.documentElement.style.overflow = prevOverflow; prevOverflow = null; }
+  }
   function arm(kind) {
     disarm(); tool = kind || "pin"; armed = true; renderDock(); if (sidebarOpen) closeSidebar();
     hintEl = hint(HINTS[tool] || HINTS.pin);
     document.addEventListener("keydown", onEsc, true);
-    if (tool === "text") { textMode = true; document.addEventListener("mouseup", onTextSelect, true); return; }
     captureLayer = el("div", "wr-capture"); wrap.appendChild(captureLayer);
+    captureLayer.addEventListener("touchmove", blockTouch, { passive: false });
+    lockScroll();
     if (tool === "pin") captureLayer.addEventListener("click", onCaptureClick, true);
-    else if (tool === "box") armBox();
     else if (tool === "draw") armDraw();
   }
   function disarm() {
-    armed = false; renderDock();
+    armed = false; renderDock(); unlockScroll();
     if (captureLayer) { captureLayer.remove(); captureLayer = null; }
     if (hintEl) { hintEl.remove(); hintEl = null; }
     if (live) { live.remove(); live = null; }
-    if (textMode) { document.removeEventListener("mouseup", onTextSelect, true); textMode = false; }
     document.removeEventListener("keydown", onEsc, true);
   }
   function onEsc(e) { if (e.key === "Escape") disarm(); }
@@ -246,18 +248,6 @@
     disarm(); ensureName(function () { openComposer(e.clientX, e.clientY, a, "pin"); });
   }
   function grab(e) { try { captureLayer.setPointerCapture(e.pointerId); } catch (err) {} }
-  function armBox() {
-    var start = null;
-    captureLayer.addEventListener("pointerdown", function (e) { e.preventDefault(); grab(e); start = { x: e.clientX, y: e.clientY }; live = el("div", "wr-rubber"); wrap.appendChild(live); setRect(live, e.clientX, e.clientY, e.clientX, e.clientY); });
-    captureLayer.addEventListener("pointermove", function (e) { if (start && live) { e.preventDefault(); setRect(live, start.x, start.y, e.clientX, e.clientY); } });
-    captureLayer.addEventListener("pointerup", function (e) {
-      if (!start) return; var s = start; start = null; if (live) { live.remove(); live = null; }
-      var x = Math.min(s.x, e.clientX), y = Math.min(s.y, e.clientY), w = Math.abs(e.clientX - s.x), h = Math.abs(e.clientY - s.y);
-      if (w < 6 || h < 6) { disarm(); return; }
-      var a = regionAnchor(x, y, w, h); disarm(); ensureName(function () { openComposer(x, y, a, "box"); });
-    });
-    captureLayer.addEventListener("pointercancel", function () { start = null; if (live) { live.remove(); live = null; } });
-  }
   function armDraw() {
     var drawing = false, pts = [], poly = null;
     captureLayer.addEventListener("pointerdown", function (e) {
@@ -273,8 +263,6 @@
     });
     captureLayer.addEventListener("pointercancel", function () { drawing = false; if (live) { live.remove(); live = null; } });
   }
-  function setRect(node, x1, y1, x2, y2) { node.style.left = Math.min(x1, x2) + "px"; node.style.top = Math.min(y1, y2) + "px"; node.style.width = Math.abs(x2 - x1) + "px"; node.style.height = Math.abs(y2 - y1) + "px"; }
-
   /* ---------------- anchor resolvers (all return a uniform shape) ----- */
   function grabText(elm) {
     if (!elm || elm === document.body) return null;
@@ -299,15 +287,6 @@
       desc: (clicked && clicked.tagName ? clicked.tagName.toLowerCase() : "el") + (a.id ? " in #" + a.id : "") + (h && h.textContent ? ' — "' + h.textContent.trim().slice(0, 40) + '"' : "")
     };
   }
-  function regionAnchor(x, y, w, h) {
-    var elm = probe(x + w / 2, y + h / 2), a = sectionOf(elm), r = a.getBoundingClientRect();
-    var rw = r.width || 1, rh = r.height || 1;
-    return {
-      section_id: a.id || null, selector: selOf(a), target_text: grabText(elm),
-      geometry: { x: round((x - r.left) / rw), y: round((y - r.top) / rh), w: round(w / rw), h: round(h / rh) },
-      desc: "region in " + (a.id ? "#" + a.id : "page")
-    };
-  }
   function drawAnchor(pts) {
     var xs = pts.map(function (p) { return p[0]; }), ys = pts.map(function (p) { return p[1]; });
     var minX = Math.min.apply(null, xs), minY = Math.min.apply(null, ys), maxX = Math.max.apply(null, xs), maxY = Math.max.apply(null, ys);
@@ -318,23 +297,6 @@
       section_id: a.id || null, selector: selOf(a), target_text: null,
       geometry: { paths: norm }, desc: "drawing in " + (a.id ? "#" + a.id : "page"), _x: minX, _y: minY
     };
-  }
-  function onTextSelect(e) {
-    try {
-      var sel = window.getSelection(); if (!sel || sel.isCollapsed) return;
-      var quote = sel.toString().trim(); if (quote.length < 2) return;
-      var range = sel.getRangeAt(0), rect = range.getBoundingClientRect();
-      var common = range.commonAncestorContainer; if (common.nodeType === 3) common = common.parentElement;
-      if (host.contains(common)) return;   // ignore selections inside our own UI
-      var a = sectionOf(common), r = a.getBoundingClientRect(), rw = r.width || 1, rh = r.height || 1;
-      var anchor = {
-        section_id: a.id || null, selector: selOf(a), target_text: quote.slice(0, 300),
-        geometry: { x: round((rect.left - r.left) / rw), y: round((rect.top - r.top) / rh), w: round(rect.width / rw), h: round(rect.height / rh) },
-        desc: "text in " + (a.id ? "#" + a.id : "page")
-      };
-      var x = rect.left, y = rect.bottom; sel.removeAllRanges(); disarm();
-      ensureName(function () { openComposer(x, y, anchor, "text"); });
-    } catch (err) { disarm(); }
   }
 
   /* ---------------- name gate ---------------- */
@@ -377,7 +339,7 @@
     inp.addEventListener("keydown", function (e) { if (e.key === "Enter") save(true); });
   }
   var TOUR = [
-    { btn: function () { return addBtn; }, title: "Annotate ✒️", body: "Tap Annotate and pick a tool — 📍 pin a spot, ▭ box an area, 🖍 highlight words, ✎ draw. Then mark the page and type what should change." },
+    { btn: function () { return pinBtn; }, title: "Pin 📍 & Draw ✎", body: "Tap Pin, then tap any spot to leave a note there. Or tap Draw and scribble right on the page. Type what should change and save." },
     { btn: function () { return listBtn; }, title: "Notes", body: "Every note lands here. Tap one to jump to its exact spot on the page, reply, or mark it resolved." },
     { btn: function () { return hideBtn; }, title: "Hide 👁", body: "Hides the review tools so you see the site clean. Tap the blue dot (bottom-left) to bring them back. That's it — happy reviewing!" }
   ];
@@ -416,7 +378,7 @@
     closePop();
     var pop = el("div", "wr-pop");
     var head = el("div", "wr-row");
-    head.appendChild(el("div", "wr-sp", "New " + (TOOLS[kind] ? TOOLS[kind].split(" ")[1].toLowerCase() : "note") + " · " + (a.section_id ? "#" + a.section_id : "page") + " · " + CUR));
+    head.appendChild(el("div", "wr-sp", "New " + (KIND_LABEL[kind] || "note") + " · " + (a.section_id ? "#" + a.section_id : "page") + " · " + CUR));
     var xb = el("button", "wr-x", "✕"); head.appendChild(xb); pop.appendChild(head);
     if (a.target_text) { var q = el("div", "wr-anchor"); q.setAttribute("dir", "auto"); q.textContent = "“" + a.target_text + "”"; pop.appendChild(q); }
     var ta = el("textarea"); ta.placeholder = "What should change here?"; ta.setAttribute("dir", "auto"); pop.appendChild(ta);
@@ -442,10 +404,11 @@
     if (!a && note.section_id) a = document.getElementById(note.section_id);
     return a || null;
   }
+  function pinCls(note) { return "wr-pin" + (isDone(note) ? " wr-pin--done" : "") + (expandedId === note.id ? " wr-pin--sel" : ""); }
   function addMarker(note) {
     var m = markers.get(note.id);
-    if (m) { m.note = note; m.el.firstChild.textContent = numberOf(note); m.el.className = "wr-pin" + (isDone(note) ? " wr-pin--done" : ""); m.el.title = (note.author || "?") + ": " + (note.body || ""); placeMarker(m); return; }
-    var b = el("button", "wr-pin" + (isDone(note) ? " wr-pin--done" : ""));
+    if (m) { m.note = note; m.el.firstChild.textContent = numberOf(note); m.el.className = pinCls(note); m.el.title = (note.author || "?") + ": " + (note.body || ""); placeMarker(m); return; }
+    var b = el("button", pinCls(note));
     b.appendChild(el("span", null, numberOf(note)));
     b.title = (note.author || "?") + ": " + (note.body || "");
     b.addEventListener("click", function (e) { e.stopPropagation(); var cur = markers.get(note.id); openInSidebar(cur ? cur.note : note); });
@@ -463,10 +426,11 @@
     if (!a) { m.el.style.display = "none"; if (m.shape) m.shape.style.display = "none"; return; }
     m.el.style.display = ""; if (m.shape) m.shape.style.display = "";
     var r = a.getBoundingClientRect(), g = note.geometry || {}, done = isDone(note);
+    var sel = expandedId === note.id;
     try {
       if (note.kind === "box") {
         var bx = r.left + (g.x || 0) * r.width, by = r.top + (g.y || 0) * r.height, bw = (g.w || 0) * r.width, bh = (g.h || 0) * r.height;
-        m.shape.className = "wr-box" + (done ? " wr-box--done" : "");
+        m.shape.className = "wr-box" + (done ? " wr-box--done" : "") + (sel ? " wr-box--sel" : "");
         m.shape.style.left = bx + "px"; m.shape.style.top = by + "px"; m.shape.style.width = bw + "px"; m.shape.style.height = bh + "px";
         m.el.style.left = bx + "px"; m.el.style.top = by + "px";
       } else if (note.kind === "text") {
@@ -474,13 +438,13 @@
         m.shape.innerHTML = "";
         if (rng) {
           var rects = rng.getClientRects(), first = null;
-          for (var i = 0; i < rects.length; i++) { var rc = rects[i]; if (!first) first = rc; var hl = el("div", "wr-hl" + (done ? " wr-hl--done" : "")); hl.style.left = rc.left + "px"; hl.style.top = rc.top + "px"; hl.style.width = rc.width + "px"; hl.style.height = rc.height + "px"; m.shape.appendChild(hl); }
+          for (var i = 0; i < rects.length; i++) { var rc = rects[i]; if (!first) first = rc; var hl = el("div", "wr-hl" + (done ? " wr-hl--done" : "") + (sel ? " wr-hl--sel" : "")); hl.style.left = rc.left + "px"; hl.style.top = rc.top + "px"; hl.style.width = rc.width + "px"; hl.style.height = rc.height + "px"; m.shape.appendChild(hl); }
           if (first) { m.el.style.left = first.left + "px"; m.el.style.top = first.top + "px"; }
           else placePoint(m, r, g);
         } else placePoint(m, r, g);   // quote not found on this layout — fall back to a corner pin
       } else if (note.kind === "draw") {
         var paths = g.paths || [], pts = paths.map(function (p) { return (r.left + p[0] * r.width) + "," + (r.top + p[1] * r.height); }).join(" ");
-        m.shape.setAttribute("class", "wr-draw" + (done ? " wr-draw--done" : ""));
+        m.shape.setAttribute("class", "wr-draw" + (done ? " wr-draw--done" : "") + (sel ? " wr-draw--sel" : ""));
         m.shape.style.cssText = "position:fixed;left:0;top:0;width:100vw;height:100vh;overflow:visible;pointer-events:none;z-index:1";
         m.shape.firstChild.setAttribute("points", pts);
         var bx0 = paths.length ? r.left + Math.min.apply(null, paths.map(function (p) { return p[0]; })) * r.width : r.left;
@@ -546,7 +510,7 @@
     var otherLayout = sorted.filter(function (n) { return onPage(n) && !lm(n); });
     var otherPages = sorted.filter(function (n) { return !onPage(n); });
     if (!here.length && !otherLayout.length && !otherPages.length)
-      bodyEl.appendChild(el("div", "wr-empty", "No notes yet.\nHit “✒️ Annotate”, pick a tool, then mark the page."));
+      bodyEl.appendChild(el("div", "wr-empty", "No notes yet.\nTap “📍 Pin” or “✎ Draw”, then mark the page."));
     if (here.length) { bodyEl.appendChild(el("div", "wr-group", "This page · " + CUR)); here.forEach(function (n) { bodyEl.appendChild(card(n)); }); }
     if (otherLayout.length) { bodyEl.appendChild(el("div", "wr-group", "Other layout (switch device to see)")); otherLayout.forEach(function (n) { bodyEl.appendChild(card(n)); }); }
     if (otherPages.length) { bodyEl.appendChild(el("div", "wr-group", "Other pages")); otherPages.forEach(function (n) { bodyEl.appendChild(card(n)); }); }
@@ -566,6 +530,8 @@
     meta.appendChild(el("span", null, kindIcon(n) + " " + (n.author || "?")));
     meta.appendChild(el("span", "wr-tag", layoutOf(n) === "mobile" ? "📱 mobile" : layoutOf(n) === "desktop" ? "💻 desktop" : "· ·"));
     if (isDone(n)) meta.appendChild(el("span", "wr-tag wr-tag--done", n.status));
+    if (n.disposition === "fix") meta.appendChild(el("span", "wr-tag wr-tag--fix", "🔧 fix"));
+    if (n.disposition === "parked") meta.appendChild(el("span", "wr-tag wr-tag--park", "⏸ parked"));
     var nc = commentsOf(n.id).length; if (nc) meta.appendChild(el("span", "wr-tag", "💬 " + nc));
     if (!onPage(n)) meta.appendChild(el("span", "wr-tag", n.page_url || "/"));
     main.appendChild(meta); head.appendChild(main);
@@ -585,6 +551,7 @@
     function renderBody() { bodyBox.innerHTML = ""; var b = el("div", "wr-body", n.body || ""); b.setAttribute("dir", "auto"); bodyBox.appendChild(b); }
     wrapc.appendChild(bodyBox);
     if (n.resolution) { var res = el("div", "wr-anchor"); res.textContent = "Resolved: " + n.resolution; wrapc.appendChild(res); }
+    if (n.owner_note) { var on = el("div", "wr-anchor"); on.setAttribute("dir", "auto"); on.textContent = "🔧 For Claude: " + n.owner_note; wrapc.appendChild(on); }
     var thread = el("div", "wr-thread");
     commentsOf(n.id).forEach(function (c) { var r = el("div", "wr-reply"); r.appendChild(el("div", "wr-rauthor", c.author || "?")); var rb = el("div", "wr-rbody", c.body || ""); rb.setAttribute("dir", "auto"); r.appendChild(rb); thread.appendChild(r); });
     var rr = el("div", "wr-replyrow"); var ri = el("input"); ri.placeholder = "Reply…"; ri.setAttribute("dir", "auto"); rr.appendChild(ri);
@@ -593,6 +560,20 @@
     sendB.addEventListener("click", sendReply); ri.addEventListener("keydown", function (e) { if (e.key === "Enter") sendReply(); });
     thread.appendChild(rr); wrapc.appendChild(thread);
     var acts = el("div", "wr-c-actions");
+    // Owner triage: queue for Claude (optionally with the reply box's text as the instruction) or park for later.
+    var fixB = el("button", "wr-mini wr-mini--fix", n.disposition === "fix" ? "🔧 Queued ✓" : "🔧 Fix");
+    fixB.addEventListener("click", function () {
+      if (n.disposition === "fix") { setDisposition(n, null, null); return; }
+      var instr = ri.value.trim();
+      if (!instr) instr = window.prompt("Instruction for Claude (optional — empty just queues it):", "") || "";
+      ri.value = "";
+      setDisposition(n, "fix", instr || null);
+      if (instr) addComment(n.id, "🔧 " + instr);
+    });
+    acts.appendChild(fixB);
+    var parkB = el("button", "wr-mini", n.disposition === "parked" ? "⏸ Parked ✓" : "⏸ Park");
+    parkB.addEventListener("click", function () { setDisposition(n, n.disposition === "parked" ? null : "parked", undefined); });
+    acts.appendChild(parkB);
     var tog = el("button", "wr-mini", isDone(n) ? "↺ Reopen" : "✓ Resolve"); tog.addEventListener("click", function () { setStatus(n, isDone(n) ? "open" : "resolved"); }); acts.appendChild(tog);
     if (isMine(n)) {
       var edb = el("button", "wr-mini", "✎ Edit"); edb.addEventListener("click", startEdit); acts.appendChild(edb);
@@ -617,7 +598,10 @@
 
   /* ---------------- data ops ---------------- */
   function colsOf(n) {
-    return { id: n.id, project_key: BOARD, kind: n.kind, page_url: n.page_url, page_title: n.page_title, section_id: n.section_id, target_selector: n.target_selector, target_text: n.target_text, elem_desc: n.elem_desc, geometry: n.geometry, viewport_w: n.viewport_w, viewport_h: n.viewport_h, body: n.body, status: n.status, author: n.author, author_id: n.author_id };
+    var c = { id: n.id, project_key: BOARD, kind: n.kind, page_url: n.page_url, page_title: n.page_title, section_id: n.section_id, target_selector: n.target_selector, target_text: n.target_text, elem_desc: n.elem_desc, geometry: n.geometry, viewport_w: n.viewport_w, viewport_h: n.viewport_h, body: n.body, status: n.status, author: n.author, author_id: n.author_id };
+    // only send triage columns when set, so inserts keep working pre-migration (fix-park.sql)
+    if (n.disposition != null) { c.disposition = n.disposition; c.owner_note = n.owner_note || null; }
+    return c;
   }
   function saveNote(partial) {
     var rec = Object.assign({ id: uid(), project_key: BOARD, kind: "pin", page_url: PAGE, page_title: document.title, status: "open", author: ME, author_id: AID, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }, partial);
@@ -641,6 +625,15 @@
     live2.body = body; live2.updated_at = new Date().toISOString(); live2.updated_by = ME; cacheWrite(); renderAll();
     if (live2._pending) { flushOne(live2); return; }
     if (supa) supa.from("notes").update({ body: body, updated_by: ME }).eq("id", live2.id).then(function (r) { if (r.error) console.warn("[review] edit needs the body grant (see hardening.sql):", r.error.message); });
+  }
+  function setDisposition(note, disp, ownerNote) {
+    var live2 = notes.filter(function (n) { return n.id === note.id; })[0] || note;
+    live2.disposition = disp;
+    if (ownerNote !== undefined) live2.owner_note = ownerNote;
+    live2.updated_by = ME; cacheWrite(); renderAll(); if (sidebarOpen) renderSidebar();
+    if (live2._pending) { flushOne(live2); return; }
+    if (supa) supa.from("notes").update({ disposition: disp, owner_note: live2.owner_note || null, updated_by: ME }).eq("id", live2.id)
+      .then(function (r) { if (r.error) console.warn("[review] fix/park needs fix-park.sql run in Supabase:", r.error.message); });
   }
   function deleteNote(note) {
     var wasPending = false;

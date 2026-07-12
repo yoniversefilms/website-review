@@ -54,6 +54,11 @@
   .mini{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:8px 12px;border-radius:9px;font:600 12px/1 var(--sans)}
   .mini.primary{background:var(--accent);border-color:var(--accent);color:#fff}
   .mini.danger{color:var(--danger)}
+  .mini.sm{padding:4px 9px;font-size:11px;border-radius:7px}
+  .mini.fix{background:rgba(245,180,69,.14);border-color:rgba(245,180,69,.4);color:var(--warn)}
+  .tag-fix{background:rgba(245,180,69,.16)!important;color:var(--warn)!important}
+  .tag-park{color:var(--dim)!important}
+  .ownernote{color:var(--warn);font-size:12.5px;margin-top:5px}
   .group{font:700 10.5px/1 var(--sans);color:var(--dim);text-transform:uppercase;letter-spacing:.07em;margin:14px 2px 8px}
   .note{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:8px}
   .note-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
@@ -140,9 +145,13 @@
     return fetch(REST+path, { headers:{ apikey:C.supabaseAnon, Authorization:"Bearer "+C.supabaseAnon, "x-board-key":board } })
       .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); });
   }
+  function patch(board, path, body){
+    return fetch(REST+path, { method:"PATCH", headers:{ apikey:C.supabaseAnon, Authorization:"Bearer "+C.supabaseAnon, "x-board-key":board, "Content-Type":"application/json", "Prefer":"return=minimal" }, body: JSON.stringify(body) })
+      .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); });
+  }
   function fetchBoard(board){
     return Promise.all([
-      api(board, "/notes?project_key=eq."+encodeURIComponent(board)+"&order=created_at.desc&select=id,kind,status,resolution,body,author,page_url,section_id,target_text,viewport_w,created_at"),
+      api(board, "/notes?project_key=eq."+encodeURIComponent(board)+"&order=created_at.desc&select=id,kind,status,resolution,disposition,owner_note,body,author,page_url,section_id,target_text,viewport_w,created_at"),
       api(board, "/comments?project_key=eq."+encodeURIComponent(board)+"&order=created_at.asc&select=note_id,author,body")
     ]).then(function(res){ return { board:board, notes:res[0]||[], comments:res[1]||[], error:null }; })
       .catch(function(e){ return { board:board, notes:[], comments:[], error:e.message }; });
@@ -175,9 +184,10 @@
   }
   function claudePrompt(board){
     return 'Pull the latest review notes for '+board+' — in ~/Documents/"Website review" run: node sync.mjs '+board+
-           ' — then read reviews/'+board+'/feedback.md and propose a fix for each OPEN note. ' +
-           'Show me the proposed edits for approval BEFORE changing any files. After I approve and you apply them, ' +
-           'set those notes to resolved (with a short resolution) in feedback.json and run: node sync.mjs '+board+' --push';
+           ' — then read reviews/'+board+'/feedback.md. Work the 🔧 FIX QUEUE first, following my per-note instructions. ' +
+           'For untriaged OPEN notes, propose fixes but wait for my approval. SKIP ⏸ parked notes entirely. ' +
+           'Show me every proposed edit BEFORE changing any files. After I approve and you apply them, set those notes to ' +
+           'resolved (short resolution text, disposition cleared) in feedback.json and run: node sync.mjs '+board+' --push';
   }
 
   /* ---------- render ---------- */
@@ -202,6 +212,8 @@
       if(r.error){ var er=el("div","err","couldn't load — "+r.error); site.appendChild(er); }
       head.appendChild(site);
       var counts = el("div","counts");
+      var fq = open.filter(function(n){ return n.disposition==="fix"; }).length;
+      if(fq) counts.appendChild(el("span","cnt open","🔧 "+fq));
       counts.appendChild(el("span","cnt "+(open.length?"open":"zero"), open.length+" open"));
       counts.appendChild(el("span","cnt "+(done.length?"done":"zero"), done.length+" done"));
       head.appendChild(counts);
@@ -235,10 +247,13 @@
         var lay = layoutOf(n); if(lay) top.appendChild(el("span","tag", lay));
         if(n.section_id) top.appendChild(el("span","tag","#"+n.section_id));
         if(!isOpen(n)) top.appendChild(el("span","tag", n.status));
+        if(n.disposition==="fix") top.appendChild(el("span","tag tag-fix","🔧 fix"));
+        if(n.disposition==="parked") top.appendChild(el("span","tag tag-park","⏸ parked"));
         d.appendChild(top);
         var b = el("div","body", n.body||"(no text)"); b.setAttribute("dir","auto"); d.appendChild(b);
         if(n.target_text){ var q=el("div","quote","“"+n.target_text+"”"); q.setAttribute("dir","auto"); d.appendChild(q); }
         if(n.resolution) d.appendChild(el("div","resolution","✓ "+n.resolution));
+        if(n.owner_note){ var onote=el("div","ownernote","🔧 For Claude: "+n.owner_note); onote.setAttribute("dir","auto"); d.appendChild(onote); }
         var reps = r.comments.filter(function(c){ return c.note_id===n.id; });
         if(reps.length){
           var rr = el("div","replies");
@@ -250,6 +265,26 @@
         if(n.page_url && n.page_url!=="/") meta.appendChild(el("span",null,n.page_url));
         var a = el("a"); a.textContent="open at this spot →"; a.href=reviewLink(r.board, n.page_url); a.target="_blank";
         meta.appendChild(a);
+        if(isOpen(n)){
+          function doPatch(body){
+            body.updated_by = "Yonatan";
+            patch(r.board, "/notes?id=eq."+n.id, body)
+              .then(function(){ toast("Saved"); load(); })
+              .catch(function(e){ toast("Failed — run fix-park.sql in Supabase ("+e.message+")"); });
+          }
+          var fixBtn = el("button","mini sm fix", n.disposition==="fix" ? "🔧 Queued ✓" : "🔧 Fix");
+          fixBtn.addEventListener("click", function(ev){
+            ev.stopPropagation();
+            if(n.disposition==="fix"){ doPatch({disposition:null, owner_note:null}); return; }
+            var instr = window.prompt("Instruction for Claude (optional — empty just queues it):","");
+            if(instr===null) return;   // cancelled
+            doPatch({disposition:"fix", owner_note: instr.trim()||null});
+          });
+          meta.appendChild(fixBtn);
+          var parkBtn = el("button","mini sm", n.disposition==="parked" ? "⏸ Parked ✓" : "⏸ Park");
+          parkBtn.addEventListener("click", function(ev){ ev.stopPropagation(); doPatch({disposition: n.disposition==="parked" ? null : "parked"}); });
+          meta.appendChild(parkBtn);
+        }
         d.appendChild(meta);
         return d;
       }
