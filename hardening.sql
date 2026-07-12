@@ -9,12 +9,14 @@
 -- Safe to re-run.
 -- =====================================================================
 
--- 1) NOTES — keep full INSERT, but restrict UPDATE to the three workflow
---    columns. Kills anonymous rewriting of body/author/target/geometry while
---    keeping the widget's "resolve" and `sync.mjs --push` working (both touch
---    only status/resolution/updated_by).
+-- 1) NOTES — keep full INSERT, but restrict UPDATE to the workflow columns +
+--    body. Kills anonymous rewriting of author/target/geometry, while allowing
+--    the widget's "resolve", `sync.mjs --push`, and edit-your-own-note (all of
+--    which touch only status/resolution/updated_by/body). Body-edit is UI-gated
+--    to the author; at the DB level a domain-scoped caller can edit a body —
+--    same accepted tier as posting/deleting a note (see PLAN.md §8).
 revoke update on public.notes from anon;
-grant  update (status, resolution, updated_by) on public.notes to anon;
+grant  update (status, resolution, updated_by, body) on public.notes to anon;
 
 -- 2) COMMENTS / ATTACHMENTS are append-only — remove anon DELETE (no client
 --    code deletes them; it was pure attack surface).

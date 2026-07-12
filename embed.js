@@ -1,28 +1,27 @@
 /* =====================================================================
- * Website Review — embed widget  (Phase 2: point-pin tool)
+ * Website Review — embed widget  (frame.io-style review layer)
  * ---------------------------------------------------------------------
- * Paste into any site you control, before </body>:
+ * Paste before </body> (or via GHL Tracking Code > Body):
  *   <script>window.WR_CONFIG = { supabaseUrl:"…", supabaseAnon:"…" };</script>
- *   <script src=".../embed.js" data-review-key="<project_key>" defer></script>
- * DORMANT for normal visitors; activates only when the page URL has ?review
- * (any value). The review board = the site's own domain, so ONE universal
- * snippet works on every site with no per-site key. Optional overrides:
+ *   <script src=".../embed.js" defer></script>
+ * DORMANT for normal visitors; activates only when the URL has ?review (any
+ * value). Board = the site's own domain (universal snippet). Overrides:
  * ?board=<id>, data-review-key on the tag, or WR_CONFIG.projectKey.
- * Scopes via the x-board-key header + Supabase RLS (HomeApp model).
+ *
+ * UI: point-pin capture + a right-hand sidebar of note cards with threaded
+ * replies, edit-your-own-note, resolve, a Hide toggle (review the site clean),
+ * and layout scoping (📱 mobile / 💻 desktop notes kept separate).
+ * Data: optimistic localStorage cache + pending-queue retry; Supabase via RLS.
  * ===================================================================== */
 (function () {
   "use strict";
-  if (window.__wrLoaded) return;            // never double-mount
+  if (window.__wrLoaded) return;
 
   var CFG = window.WR_CONFIG || {};
   var thisScript = document.currentScript;
   var params = new URLSearchParams(location.search);
-
-  // Activate ONLY in review mode — dormant (nothing loads) for normal visitors.
   if (!params.has("review") && !CFG.alwaysOn) return;
 
-  // Board identity = the site's own domain (universal snippet, zero per-site setup).
-  // Optional explicit overrides: ?board=, data-review-key, or WR_CONFIG.projectKey.
   function normHost(h) { return String(h || "").replace(/^www\./i, "").toLowerCase() || "localhost"; }
   var BOARD =
     params.get("board") ||
@@ -34,13 +33,12 @@
     console.warn("[review] WR_CONFIG.supabaseUrl / supabaseAnon missing — widget off.");
     return;
   }
-  window.__wrLoaded = true;                  // claim the mount only now (dormant runs don't poison a later activation)
+  window.__wrLoaded = true;
 
   /* ---------------- identity + local cache (no login) ---------------- */
   var LS = { name: "wr:name", aid: "wr:aid", notes: "wr:notes:" + BOARD };
   function uid() { return (crypto.randomUUID && crypto.randomUUID()) || (Date.now() + "-" + Math.random().toString(16).slice(2)); }
-  var ME = "";
-  var AID = "";
+  var ME = "", AID = "";
   try { ME = localStorage.getItem(LS.name) || CFG.me || ""; } catch (e) {}
   try { AID = localStorage.getItem(LS.aid) || ""; if (!AID) { AID = uid(); localStorage.setItem(LS.aid, AID); } } catch (e) { AID = uid(); }
   function cacheRead() { try { return JSON.parse(localStorage.getItem(LS.notes) || "[]"); } catch (e) { return []; } }
@@ -48,13 +46,23 @@
 
   /* ---------------- state ---------------- */
   var supa = null;
-  var notes = cacheRead();                   // render instantly from cache
-  var armed = false;                         // pin tool armed?
-  var markers = new Map();                    // note.id -> {el, note}
-  var listOpen = false;
+  var notes = cacheRead();
+  var comments = [];
+  var armed = false;
+  var markers = new Map();                     // note.id -> {el, note}
+  var sidebarOpen = false;
+  var collapsed = false;                       // Hide toggle: everything down to a dot
+  var expandedId = null;                       // which card is expanded in the sidebar
+  var layoutFilter = "current";                // 'current' | 'all'
+
   function pageKey() { return (location.pathname.replace(/\/+$/, "") || "/") + location.hash; }
-  var PAGE = pageKey();                        // notes are scoped to this page of the domain
+  var PAGE = pageKey();
+  function curLayout() { return innerWidth >= 768 ? "desktop" : (innerWidth > 0 ? "mobile" : "desktop"); }
+  var CUR = curLayout();
+  function layoutOf(n) { var w = n.viewport_w || 0; return w ? (w < 768 ? "mobile" : "desktop") : "unknown"; }
   function onPage(n) { return (n.page_url || "/") === PAGE; }
+  function onLayout(n) { return layoutFilter === "all" || layoutOf(n) === CUR || layoutOf(n) === "unknown"; }
+  function renderable(n) { return onPage(n) && onLayout(n); }   // gets a pin on THIS page+layout
 
   /* ---------------- shadow root + styles ---------------- */
   var host = document.createElement("div");
@@ -66,6 +74,8 @@
     '<style>' +
     ':host,*{box-sizing:border-box}' +
     '.wr{direction:ltr;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;color:#12151c}' +
+    '.wr--collapsed .wr-overlay,.wr--collapsed .wr-dock,.wr--collapsed .wr-side,.wr--collapsed .wr-pop,.wr--collapsed .wr-hint,.wr--collapsed .wr-capture{display:none!important}' +
+    /* pins */
     '.wr-overlay{position:fixed;inset:0;pointer-events:none;z-index:2147483000}' +
     '.wr-capture{position:fixed;inset:0;z-index:2147483001;cursor:crosshair;background:rgba(43,108,255,.04)}' +
     '.wr-pin{position:fixed;transform:translate(-50%,-100%);pointer-events:auto;cursor:pointer;width:26px;height:26px;' +
@@ -73,22 +83,59 @@
       'display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.35);rotate:-45deg}' +
     '.wr-pin>span{rotate:45deg}' +
     '.wr-pin--done{background:#48b98a}' +
+    '.wr-pin--sel{outline:3px solid rgba(43,108,255,.4);outline-offset:2px}' +
     '.wr-pin--pulse{animation:wrp .9s ease 2}' +
     '@keyframes wrp{0%,100%{box-shadow:0 2px 8px rgba(0,0,0,.35)}50%{box-shadow:0 0 0 8px rgba(43,108,255,.35)}}' +
+    /* dock */
     '.wr-dock{position:fixed;bottom:16px;left:16px;z-index:2147483002;pointer-events:auto;display:flex;gap:8px;align-items:center}' +
     '.wr-btn{pointer-events:auto;border:0;border-radius:999px;padding:10px 14px;font:600 13px/1 inherit;cursor:pointer;' +
       'background:#12151c;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.25);display:inline-flex;gap:7px;align-items:center}' +
     '.wr-btn--go{background:#2b6cff}.wr-btn--ghost{background:#fff;color:#12151c;border:1px solid #e2e5ea}' +
     '.wr-badge{background:rgba(255,255,255,.22);border-radius:999px;padding:1px 7px;font-size:11px}' +
-    '.wr-panel{position:fixed;bottom:64px;left:16px;z-index:2147483002;width:min(340px,86vw);max-height:60vh;overflow:auto;' +
-      'background:#fff;border:1px solid #e2e5ea;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.22);padding:8px}' +
-    '.wr-panel h4{margin:6px 8px 8px;font:600 12px/1 inherit;color:#697086;text-transform:uppercase;letter-spacing:.04em}' +
-    '.wr-card{display:flex;gap:9px;padding:9px 8px;border-radius:10px;cursor:pointer}' +
-    '.wr-card:hover{background:#f4f6f9}' +
+    '.wr-dot{position:fixed;bottom:16px;left:16px;z-index:2147483003;pointer-events:auto;width:44px;height:44px;border:0;border-radius:50%;' +
+      'background:#2b6cff;color:#fff;font-size:18px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center}' +
+    /* sidebar */
+    '.wr-side{position:fixed;top:0;right:0;height:100vh;width:344px;max-width:92vw;z-index:2147483002;pointer-events:auto;' +
+      'background:#fff;border-left:1px solid #e6e9ef;box-shadow:-12px 0 40px rgba(0,0,0,.12);display:flex;flex-direction:column;' +
+      'transform:translateX(0);transition:transform .18s ease}' +
+    '.wr-side-head{display:flex;align-items:center;gap:8px;padding:13px 14px;border-bottom:1px solid #eef1f5}' +
+    '.wr-side-title{font-weight:700;font-size:15px}.wr-side-head .wr-sp{margin-left:auto}' +
+    '.wr-chip{border:1px solid #d7dbe2;background:#fff;border-radius:999px;padding:4px 10px;font:600 12px/1 inherit;color:#3a4152;cursor:pointer;display:inline-flex;gap:5px;align-items:center}' +
+    '.wr-chip--on{background:#eef3ff;border-color:#b9ccff;color:#2b6cff}' +
+    '.wr-side-body{flex:1;overflow:auto;padding:8px}' +
+    '.wr-group{margin:12px 6px 6px;font:700 11px/1 inherit;color:#8a93a3;text-transform:uppercase;letter-spacing:.05em}' +
+    '.wr-group:first-child{margin-top:4px}' +
+    '.wr-empty{padding:26px 14px;color:#8a93a3;text-align:center;line-height:1.5}' +
+    /* card */
+    '.wr-c{border:1px solid #ebeef3;border-radius:12px;margin-bottom:8px;overflow:hidden;background:#fff}' +
+    '.wr-c--sel{border-color:#b9ccff;box-shadow:0 0 0 3px rgba(43,108,255,.12)}' +
+    '.wr-c--done{opacity:.72}' +
+    '.wr-c-head{display:flex;gap:9px;padding:10px;cursor:pointer;align-items:flex-start}' +
+    '.wr-c-head:hover{background:#f7f9fc}' +
     '.wr-num{flex:0 0 22px;height:22px;border-radius:50%;background:#2b6cff;color:#fff;font:600 11px/22px inherit;text-align:center}' +
-    '.wr-card--done .wr-num{background:#48b98a}' +
-    '.wr-meta{font-size:11px;color:#8a93a3;margin-top:2px}' +
-    '.wr-empty{padding:16px 10px;color:#8a93a3;text-align:center}' +
+    '.wr-c--done .wr-num{background:#48b98a}' +
+    '.wr-c-main{min-width:0;flex:1}' +
+    '.wr-c-preview{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4}' +
+    '.wr-c-meta{font-size:11px;color:#8a93a3;margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}' +
+    '.wr-tag{border-radius:999px;padding:1px 7px;font:600 10px/1.6 inherit;background:#f0f2f6;color:#5b6373}' +
+    '.wr-tag--done{background:#e6f6ee;color:#2f8f63}' +
+    '.wr-c-open{padding:0 10px 10px}' +
+    '.wr-anchor{background:#f6f8fb;border:1px solid #eef1f5;border-radius:9px;padding:7px 9px;font-size:12px;color:#5b6373;margin-bottom:8px}' +
+    '.wr-anchor code{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#2b6cff}' +
+    '.wr-anchor .wr-quote{color:#3a4152;margin-top:3px}' +
+    '.wr-locate{color:#2b6cff;cursor:pointer;font-weight:600;font-size:11px;margin-left:6px}' +
+    '.wr-body{white-space:pre-wrap;line-height:1.5;margin-bottom:8px}' +
+    '.wr-thread{border-top:1px solid #eef1f5;margin-top:2px;padding-top:8px;display:flex;flex-direction:column;gap:8px}' +
+    '.wr-reply{background:#f7f9fc;border-radius:9px;padding:7px 9px}' +
+    '.wr-reply .wr-rauthor{font-weight:600;font-size:12px}.wr-reply .wr-rbody{font-size:13px;line-height:1.45;white-space:pre-wrap}' +
+    '.wr-reply .wr-rmeta{font-size:10px;color:#a2abbb;margin-top:2px}' +
+    '.wr-replyrow{display:flex;gap:6px;margin-top:2px}' +
+    '.wr-replyrow input{flex:1;border:1px solid #d7dbe2;border-radius:9px;padding:8px;font:inherit;color:inherit}' +
+    '.wr-c-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}' +
+    '.wr-mini{border:1px solid #d7dbe2;background:#fff;border-radius:8px;padding:6px 10px;font:600 12px/1 inherit;cursor:pointer;color:#3a4152}' +
+    '.wr-mini--go{background:#2b6cff;color:#fff;border-color:#2b6cff}.wr-mini--danger{color:#c0392b}' +
+    '.wr-edit textarea{width:100%;min-height:64px;resize:vertical;border:1px solid #d7dbe2;border-radius:9px;padding:8px;font:inherit;color:inherit}' +
+    /* composer + name popovers */
     '.wr-pop{position:fixed;z-index:2147483003;width:min(300px,86vw);background:#fff;border:1px solid #e2e5ea;border-radius:14px;' +
       'box-shadow:0 12px 40px rgba(0,0,0,.24);padding:12px}' +
     '.wr-pop textarea{width:100%;min-height:74px;resize:vertical;border:1px solid #d7dbe2;border-radius:10px;padding:9px;font:inherit;color:inherit}' +
@@ -96,37 +143,52 @@
     '.wr-row{display:flex;gap:8px;justify-content:flex-end;margin-top:9px;align-items:center}' +
     '.wr-row .wr-sp{margin-right:auto;color:#8a93a3;font-size:12px}' +
     '.wr-x{background:none;border:0;font-size:16px;cursor:pointer;color:#8a93a3;padding:2px 6px}' +
-    '.wr-read{white-space:pre-wrap;line-height:1.5}' +
     '.wr-hint{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:2147483003;background:#12151c;color:#fff;' +
-      'padding:8px 14px;border-radius:999px;font-size:13px;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.3)}' +
+      'padding:8px 14px;border-radius:999px;font-size:13px;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.3);max-width:92vw;text-align:center}' +
+    '@media (max-width:600px){.wr-side{width:100vw;max-width:100vw;height:74vh;top:auto;bottom:0;border-left:0;border-top:1px solid #e6e9ef;border-radius:16px 16px 0 0}}' +
     '</style>' +
     '<div class="wr"><div class="wr-overlay" id="ov"></div><div class="wr-dock" id="dock"></div></div>';
+  var wrap = root.querySelector(".wr");
   var overlay = root.getElementById("ov");
   var dock = root.getElementById("dock");
 
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
-  function openCount() { return notes.filter(function (n) { return onPage(n) && n.status !== "resolved" && n.status !== "wont_fix"; }).length; }
+  function isMine(n) { return n.author_id && n.author_id === AID; }
+  function isDone(n) { return n.status === "resolved" || n.status === "wont_fix"; }
+  function openCount() { return notes.filter(function (n) { return renderable(n) && !isDone(n); }).length; }
 
   /* ---------------- dock (launcher) ---------------- */
   var addBtn = el("button", "wr-btn wr-btn--go");
   var listBtn = el("button", "wr-btn wr-btn--ghost");
-  dock.appendChild(addBtn); dock.appendChild(listBtn);
+  var hideBtn = el("button", "wr-btn wr-btn--ghost");
+  dock.appendChild(addBtn); dock.appendChild(listBtn); dock.appendChild(hideBtn);
+  var dot = null;
   function renderDock() {
     addBtn.innerHTML = armed ? "✕ Cancel" : '<span>📍</span> Add note';
     listBtn.innerHTML = 'Notes <span class="wr-badge">' + openCount() + "</span>";
+    hideBtn.textContent = "👁 Hide";
   }
   addBtn.addEventListener("click", function () { armed ? disarm() : arm(); });
-  listBtn.addEventListener("click", function () { listOpen ? closePanel() : openPanel(); });
+  listBtn.addEventListener("click", function () { sidebarOpen ? closeSidebar() : openSidebar(); });
+  hideBtn.addEventListener("click", collapse);
+
+  function collapse() {
+    collapsed = true; wrap.classList.add("wr--collapsed");
+    if (!dot) { dot = el("button", "wr-dot", "◐"); dot.title = "Show review tools"; dot.addEventListener("click", expand); wrap.appendChild(dot); }
+    dot.style.display = "flex";
+  }
+  function expand() { collapsed = false; wrap.classList.remove("wr--collapsed"); if (dot) dot.style.display = "none"; }
 
   /* ---------------- pin tool: arm / capture click ---------------- */
   var captureLayer = null, hintEl = null;
   function arm() {
     if (armed) return; armed = true; renderDock();
+    if (sidebarOpen) closeSidebar();
     captureLayer = el("div", "wr-capture");
     captureLayer.addEventListener("click", onCaptureClick, true);
-    root.querySelector(".wr").appendChild(captureLayer);
+    wrap.appendChild(captureLayer);
     hintEl = el("div", "wr-hint", "Click the spot you want to comment on  ·  Esc to cancel");
-    root.querySelector(".wr").appendChild(hintEl);
+    wrap.appendChild(hintEl);
     document.addEventListener("keydown", onEsc, true);
   }
   function disarm() {
@@ -139,8 +201,6 @@
   function onCaptureClick(e) {
     e.preventDefault(); e.stopPropagation();
     var x = e.clientX, y = e.clientY;
-    // Hide our own layers so elementFromPoint returns the real page element,
-    // not the capture layer or an existing pin (which retargets to the host).
     captureLayer.style.pointerEvents = "none";
     var ovDisp = overlay.style.display; overlay.style.display = "none";
     var target = document.elementFromPoint(x, y) || document.body;
@@ -150,13 +210,13 @@
     ensureName(function () { openComposer(x, y, a); });
   }
 
-  /* ---------------- anchoring (D1: nearest id + fractional xy) ------- */
+  /* ---------------- anchoring (nearest id + verified 2-hop + text) --- */
   function esc(id) { return window.CSS && CSS.escape ? CSS.escape(id) : id; }
   function grabText(elm) {
     if (!elm || elm === document.body) return null;
     var t = (elm.innerText || elm.value || elm.placeholder || elm.alt ||
              (elm.getAttribute && elm.getAttribute("aria-label")) || "").trim().replace(/\s+/g, " ");
-    if (!t || t.length > 160) return null;      // empty, or a whole container — not a useful quote
+    if (!t || t.length > 160) return null;
     return t.slice(0, 120);
   }
   function resolveAnchor(clientX, clientY, targetEl) {
@@ -166,7 +226,6 @@
     while (a && a !== document.body && (!a.id || a.id === "wr-root")) a = a.parentElement;
     if (!a || !a.id) a = document.body;
     var baseSel = a.id ? "#" + esc(a.id) : "body";
-    // 2-hop: pin to the CLICKED element when a verified selector reaches it, else the section.
     var selector = baseSel, geoEl = a;
     if (clicked && clicked !== a && clicked.tagName) {
       var hop = clicked.tagName.toLowerCase() +
@@ -187,7 +246,7 @@
     var a = null;
     try { a = note.target_selector && document.querySelector(note.target_selector); } catch (e) {}
     if (!a && note.section_id) a = document.getElementById(note.section_id);
-    return a || null;   // null => can't locate on this page; caller hides the pin (recovers on next placeAll)
+    return a || null;
   }
   function placeMarker(m) {
     var a = anchorEl(m.note);
@@ -200,19 +259,20 @@
   }
   function placeAll() { markers.forEach(placeMarker); }
   window.addEventListener("scroll", placeAll, { passive: true });
-  window.addEventListener("resize", placeAll);
+  window.addEventListener("resize", function () { var was = CUR; CUR = curLayout(); if (was !== CUR) renderAll(); placeAll(); });
   window.addEventListener("hashchange", function () { PAGE = pageKey(); renderAll(); });
 
   /* ---------------- markers ---------------- */
   function numberOf(note) {
-    var sorted = notes.slice().sort(function (a, b) { return (a.created_at || "") < (b.created_at || "") ? -1 : 1; });
+    var sorted = notes.slice().sort(byCreated);
     return sorted.findIndex(function (n) { return n.id === note.id; }) + 1;
   }
+  function byCreated(a, b) { return (a.created_at || "") < (b.created_at || "") ? -1 : 1; }
   function addMarker(note) {
     var m = markers.get(note.id);
     if (m) {
       m.note = note; m.el.firstChild.textContent = numberOf(note);
-      m.el.className = "wr-pin" + (isDone(note) ? " wr-pin--done" : "");
+      m.el.className = "wr-pin" + (isDone(note) ? " wr-pin--done" : "") + (expandedId === note.id ? " wr-pin--sel" : "");
       m.el.title = (note.author || "?") + ": " + (note.body || "");
       placeMarker(m); return;
     }
@@ -221,29 +281,28 @@
     b.title = (note.author || "?") + ": " + (note.body || "");
     b.addEventListener("click", function (e) {
       e.stopPropagation();
-      var cur = markers.get(note.id);          // open the LIVE note, not the creation-time closure
-      openNote(cur ? cur.note : note, b);
+      var cur = markers.get(note.id);
+      openInSidebar(cur ? cur.note : note);
     });
     overlay.appendChild(b);
     m = { el: b, note: note }; markers.set(note.id, m); placeMarker(m);
   }
-  function isDone(n) { return n.status === "resolved" || n.status === "wont_fix"; }
   function removeMarker(id) { var m = markers.get(id); if (m) { m.el.remove(); markers.delete(id); } }
   function renderAll() {
     var seen = {};
-    notes.forEach(function (n) { if (onPage(n)) { seen[n.id] = 1; addMarker(n); } });
+    notes.forEach(function (n) { if (renderable(n)) { seen[n.id] = 1; addMarker(n); } });
     markers.forEach(function (_, id) { if (!seen[id]) removeMarker(id); });
-    renderDock(); if (listOpen) renderPanel();
+    renderDock(); if (sidebarOpen) renderSidebar();
   }
 
   /* ---------------- name gate ---------------- */
   function ensureName(next) {
     if (ME) return next();
     var pop = el("div", "wr-pop"); pop.style.left = "16px"; pop.style.bottom = "64px"; pop.style.top = "auto";
-    pop.innerHTML = "<div style='font-weight:600;margin-bottom:8px'>What's your name?</div>";
+    pop.appendChild(el("div", null, "What's your name?")).style.cssText = "font-weight:600;margin-bottom:8px";
     var inp = el("input"); inp.placeholder = "e.g. Ruth"; inp.setAttribute("dir", "auto"); pop.appendChild(inp);
     var row = el("div", "wr-row"); var ok = el("button", "wr-btn wr-btn--go", "Continue"); row.appendChild(ok); pop.appendChild(row);
-    root.querySelector(".wr").appendChild(pop); inp.focus();
+    wrap.appendChild(pop); inp.focus();
     function done() { var v = inp.value.trim(); if (!v) return inp.focus(); ME = v; try { localStorage.setItem(LS.name, v); } catch (e) {} pop.remove(); next(); }
     ok.addEventListener("click", done);
     inp.addEventListener("keydown", function (e) { if (e.key === "Enter") done(); });
@@ -253,17 +312,16 @@
   var openPop = null;
   function closePop() { if (openPop) { openPop.remove(); openPop = null; } }
   function positionPop(pop, x, y) {
-    root.querySelector(".wr").appendChild(pop);
+    wrap.appendChild(pop);
     var w = pop.offsetWidth, h = pop.offsetHeight, pad = 12;
-    var L = Math.min(Math.max(pad, x + 14), innerWidth - w - pad);
-    var T = Math.min(Math.max(pad, y + 14), innerHeight - h - pad);
-    pop.style.left = L + "px"; pop.style.top = T + "px";
+    pop.style.left = Math.min(Math.max(pad, x + 14), innerWidth - w - pad) + "px";
+    pop.style.top = Math.min(Math.max(pad, y + 14), innerHeight - h - pad) + "px";
   }
   function openComposer(x, y, a) {
     closePop();
     var pop = el("div", "wr-pop");
     var head = el("div", "wr-row");
-    head.appendChild(el("div", "wr-sp", "New note · " + (a.section_id ? "#" + a.section_id : "page")));
+    head.appendChild(el("div", "wr-sp", "New note · " + (a.section_id ? "#" + a.section_id : "page") + " · " + CUR));
     var xb = el("button", "wr-x", "✕"); head.appendChild(xb); pop.appendChild(head);
     var ta = el("textarea"); ta.placeholder = "What should change here?"; ta.setAttribute("dir", "auto"); pop.appendChild(ta);
     var row = el("div", "wr-row"); var save = el("button", "wr-btn wr-btn--go", "Save note"); row.appendChild(save); pop.appendChild(row);
@@ -276,31 +334,142 @@
         kind: "pin", section_id: a.section_id, target_selector: a.selector, target_text: a.target_text, elem_desc: a.desc,
         geometry: { x: round(a.fx), y: round(a.fy) }, viewport_w: innerWidth, viewport_h: innerHeight, body: body
       });
+      openSidebar();
     }
     save.addEventListener("click", submit);
     ta.addEventListener("keydown", function (e) { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") submit(); });
   }
   function round(n) { return Math.round(n * 10000) / 10000; }
 
-  /* ---------------- read / resolve an existing note --------------- */
-  function openNote(note, markerEl) {
-    closePop();
-    var r = markerEl.getBoundingClientRect();
-    var pop = el("div", "wr-pop");
-    var head = el("div", "wr-row");
-    head.appendChild(el("div", "wr-sp", "#" + numberOf(note) + " · " + (note.author || "?") +
-      (note.section_id ? " · #" + note.section_id : "")));
-    var xb = el("button", "wr-x", "✕"); head.appendChild(xb); pop.appendChild(head);
-    var read = el("div", "wr-read", note.body || ""); read.setAttribute("dir", "auto"); pop.appendChild(read);
-    if (note.resolution) { var res = el("div", "wr-meta", "Resolved: " + note.resolution); res.style.marginTop = "8px"; pop.appendChild(res); }
-    var row = el("div", "wr-row");
-    var toggle = el("button", "wr-btn wr-btn--ghost", isDone(note) ? "Reopen" : "Mark resolved");
-    var del = el("button", "wr-x", "🗑");
-    row.appendChild(del); row.appendChild(toggle); pop.appendChild(row);
-    openPop = pop; positionPop(pop, r.left, r.top);
-    xb.addEventListener("click", closePop);
-    toggle.addEventListener("click", function () { setStatus(note, isDone(note) ? "open" : "resolved"); closePop(); });
-    del.addEventListener("click", function () { if (confirm("Delete this note?")) { deleteNote(note); closePop(); } });
+  /* ---------------- sidebar (frame.io-style note list) ---------------- */
+  var side = null;
+  function openSidebar() { sidebarOpen = true; if (collapsed) expand(); renderSidebar(); }
+  function closeSidebar() { sidebarOpen = false; if (side) { side.remove(); side = null; } renderDock(); }
+  function openInSidebar(note) { openSidebar(); expandedId = note.id; renderSidebar(); renderAll(); scrollCardIntoView(note.id); pulse(note.id); }
+  function scrollCardIntoView(id) { setTimeout(function () { var c = side && side.querySelector('[data-card="' + id + '"]'); if (c) c.scrollIntoView({ block: "nearest" }); }, 30); }
+
+  function renderSidebar() {
+    if (side) side.remove();
+    side = el("div", "wr-side");
+    var head = el("div", "wr-side-head");
+    head.appendChild(el("div", "wr-side-title", "Review"));
+    var sp = el("div", "wr-sp");
+    var lay = el("button", "wr-chip" + (layoutFilter === "all" ? "" : " wr-chip--on"), (CUR === "mobile" ? "📱 " : "💻 ") + (layoutFilter === "all" ? "All layouts" : CUR));
+    lay.title = "Toggle: this layout only / all layouts";
+    lay.addEventListener("click", function () { layoutFilter = layoutFilter === "all" ? "current" : "all"; renderSidebar(); renderAll(); });
+    head.appendChild(sp); head.appendChild(lay);
+    var cx = el("button", "wr-x", "✕"); cx.addEventListener("click", closeSidebar); head.appendChild(cx);
+    side.appendChild(head);
+
+    var bodyEl = el("div", "wr-side-body");
+    var sorted = notes.slice().sort(byCreated);
+    var here = sorted.filter(function (n) { return onPage(n) && (layoutFilter === "all" || layoutOf(n) === CUR || layoutOf(n) === "unknown"); });
+    var otherLayout = sorted.filter(function (n) { return onPage(n) && !(layoutFilter === "all" || layoutOf(n) === CUR || layoutOf(n) === "unknown"); });
+    var otherPages = sorted.filter(function (n) { return !onPage(n); });
+
+    if (!here.length && !otherLayout.length && !otherPages.length)
+      bodyEl.appendChild(el("div", "wr-empty", "No notes yet.\nHit “📍 Add note”, then click any spot on the page."));
+    if (here.length) { bodyEl.appendChild(el("div", "wr-group", "This page · " + CUR)); here.forEach(function (n) { bodyEl.appendChild(card(n)); }); }
+    if (otherLayout.length) { bodyEl.appendChild(el("div", "wr-group", "Other layout (switch device to place/see)")); otherLayout.forEach(function (n) { bodyEl.appendChild(card(n)); }); }
+    if (otherPages.length) { bodyEl.appendChild(el("div", "wr-group", "Other pages")); otherPages.forEach(function (n) { bodyEl.appendChild(card(n)); }); }
+    side.appendChild(bodyEl);
+    wrap.appendChild(side);
+    renderDock();
+  }
+
+  function card(n) {
+    var open = expandedId === n.id;
+    var c = el("div", "wr-c" + (isDone(n) ? " wr-c--done" : "") + (open ? " wr-c--sel" : ""));
+    c.setAttribute("data-card", n.id);
+    var head = el("div", "wr-c-head");
+    head.appendChild(el("div", "wr-num", numberOf(n)));
+    var main = el("div", "wr-c-main");
+    var pv = el("div", "wr-c-preview", n.body || "(no text)"); pv.setAttribute("dir", "auto"); main.appendChild(pv);
+    var meta = el("div", "wr-c-meta");
+    meta.appendChild(el("span", null, n.author || "?"));
+    meta.appendChild(el("span", "wr-tag", layoutOf(n) === "mobile" ? "📱 mobile" : layoutOf(n) === "desktop" ? "💻 desktop" : "· ·"));
+    if (isDone(n)) meta.appendChild(el("span", "wr-tag wr-tag--done", n.status));
+    var nc = commentsOf(n.id).length; if (nc) meta.appendChild(el("span", "wr-tag", "💬 " + nc));
+    if (!onPage(n)) meta.appendChild(el("span", "wr-tag", n.page_url || "/"));
+    main.appendChild(meta);
+    head.appendChild(main);
+    head.addEventListener("click", function () { expandedId = open ? null : n.id; renderSidebar(); renderAll(); });
+    c.appendChild(head);
+    if (open) c.appendChild(cardBody(n));
+    return c;
+  }
+
+  function cardBody(n) {
+    var wrapc = el("div", "wr-c-open");
+    // anchor
+    var anc = el("div", "wr-anchor");
+    var sel = el("code", null, n.target_selector || (n.section_id ? "#" + n.section_id : n.page_url || "/")); anc.appendChild(sel);
+    var loc = el("span", "wr-locate", "locate →"); loc.addEventListener("click", function () { jumpTo(n); }); anc.appendChild(loc);
+    if (n.target_text) { var qq = el("div", "wr-quote"); qq.setAttribute("dir", "auto"); qq.textContent = "“" + n.target_text + "”"; anc.appendChild(qq); }
+    wrapc.appendChild(anc);
+    // body (with inline edit if mine)
+    var bodyBox = el("div");
+    renderBody();
+    function renderBody() {
+      bodyBox.innerHTML = "";
+      var b = el("div", "wr-body", n.body || ""); b.setAttribute("dir", "auto"); bodyBox.appendChild(b);
+    }
+    wrapc.appendChild(bodyBox);
+    if (n.resolution) { var res = el("div", "wr-anchor"); res.textContent = "Resolved: " + n.resolution; wrapc.appendChild(res); }
+    // thread
+    var thread = el("div", "wr-thread");
+    commentsOf(n.id).forEach(function (c) {
+      var r = el("div", "wr-reply");
+      r.appendChild(el("div", "wr-rauthor", c.author || "?"));
+      var rb = el("div", "wr-rbody", c.body || ""); rb.setAttribute("dir", "auto"); r.appendChild(rb);
+      thread.appendChild(r);
+    });
+    var rr = el("div", "wr-replyrow");
+    var ri = el("input"); ri.placeholder = "Reply…"; ri.setAttribute("dir", "auto"); rr.appendChild(ri);
+    var rb = el("button", "wr-mini wr-mini--go", "Send"); rr.appendChild(rb);
+    function sendReply() { var v = ri.value.trim(); if (!v) return; ri.value = ""; ensureName(function () { addComment(n.id, v); }); }
+    rb.addEventListener("click", sendReply);
+    ri.addEventListener("keydown", function (e) { if (e.key === "Enter") sendReply(); });
+    thread.appendChild(rr);
+    wrapc.appendChild(thread);
+    // actions
+    var acts = el("div", "wr-c-actions");
+    var tog = el("button", "wr-mini", isDone(n) ? "↺ Reopen" : "✓ Resolve");
+    tog.addEventListener("click", function () { setStatus(n, isDone(n) ? "open" : "resolved"); });
+    acts.appendChild(tog);
+    if (isMine(n)) {
+      var ed = el("button", "wr-mini", "✎ Edit");
+      ed.addEventListener("click", function () { startEdit(); });
+      acts.appendChild(ed);
+      var del = el("button", "wr-mini wr-mini--danger", "🗑 Delete");
+      del.addEventListener("click", function () { if (confirm("Delete your note?")) { deleteNote(n); expandedId = null; renderSidebar(); renderAll(); } });
+      acts.appendChild(del);
+    }
+    wrapc.appendChild(acts);
+
+    function startEdit() {
+      bodyBox.innerHTML = "";
+      var box = el("div", "wr-edit");
+      var ta = el("textarea"); ta.value = n.body || ""; ta.setAttribute("dir", "auto"); box.appendChild(ta);
+      var row = el("div", "wr-c-actions");
+      var save = el("button", "wr-mini wr-mini--go", "Save");
+      var cancel = el("button", "wr-mini", "Cancel");
+      row.appendChild(save); row.appendChild(cancel); box.appendChild(row);
+      bodyBox.appendChild(box); ta.focus();
+      save.addEventListener("click", function () { var v = ta.value.trim(); if (!v) return; updateBody(n, v); renderBody(); });
+      cancel.addEventListener("click", renderBody);
+    }
+    return wrapc;
+  }
+
+  function pulse(id) {
+    setTimeout(function () { var m = markers.get(id); if (m) { m.el.classList.add("wr-pin--pulse"); setTimeout(function () { m.el.classList.remove("wr-pin--pulse"); }, 1800); } }, 60);
+  }
+  function jumpTo(note) {
+    if (!onPage(note)) { var u = note.page_url || "/"; location.href = u + (u.indexOf("?") >= 0 ? "&" : "?") + "review=1"; return; }
+    var a = anchorEl(note);
+    if (a) a.scrollIntoView({ behavior: "smooth", block: "center" });
+    pulse(note.id);
   }
 
   /* ---------------- data ops (Supabase + optimistic cache) -------- */
@@ -317,7 +486,7 @@
       id: uid(), project_key: BOARD, kind: "pin", page_url: PAGE, page_title: document.title,
       status: "open", author: ME, author_id: AID, created_at: new Date().toISOString(), updated_at: new Date().toISOString()
     }, partial);
-    rec._pending = true;                        // not yet confirmed on the server
+    rec._pending = true;
     notes.push(rec); cacheWrite(); renderAll();
     flushOne(rec);
   }
@@ -332,10 +501,17 @@
   function setStatus(note, status) {
     var live = notes.filter(function (n) { return n.id === note.id; })[0] || note;
     live.status = status; live.updated_at = new Date().toISOString(); live.updated_by = ME;
-    if (status !== "resolved" && status !== "wont_fix") live.resolution = null;   // reopen clears stale resolution
+    if (status !== "resolved" && status !== "wont_fix") live.resolution = null;
     cacheWrite(); renderAll();
-    if (live._pending) { flushOne(live); return; }   // whole record (incl. new status) goes up on flush
+    if (live._pending) { flushOne(live); return; }
     if (supa) supa.from("notes").update({ status: status, updated_by: ME, resolution: live.resolution || null }).eq("id", live.id).then(function (r) { if (r.error) console.warn(r.error.message); });
+  }
+  function updateBody(note, body) {
+    var live = notes.filter(function (n) { return n.id === note.id; })[0] || note;
+    live.body = body; live.updated_at = new Date().toISOString(); live.updated_by = ME;
+    cacheWrite(); renderAll();
+    if (live._pending) { flushOne(live); return; }
+    if (supa) supa.from("notes").update({ body: body, updated_by: ME }).eq("id", live.id).then(function (r) { if (r.error) console.warn("[review] edit needs the body grant — run the SQL in README:", r.error.message); });
   }
   function deleteNote(note) {
     var wasPending = false;
@@ -343,73 +519,31 @@
     removeMarker(note.id); cacheWrite(); renderAll();
     if (!wasPending && supa) supa.from("notes").delete().eq("id", note.id).then(function (r) { if (r.error) console.warn(r.error.message); });
   }
+  function commentsOf(id) { return comments.filter(function (c) { return c.note_id === id; }).sort(byCreated); }
+  function addComment(noteId, body) {
+    var rec = { id: uid(), note_id: noteId, project_key: BOARD, author: ME, author_id: AID, body: body, created_at: new Date().toISOString() };
+    comments.push(rec); renderSidebar(); renderAll();
+    if (supa) supa.from("comments").insert({ note_id: noteId, project_key: BOARD, author: ME, author_id: AID, body: body })
+      .then(function (r) { if (r.error) console.warn("[review] reply failed:", r.error.message); });
+  }
   function fetchNotes() {
     if (!supa) return;
     supa.from("notes").select("*").eq("project_key", BOARD).order("created_at", { ascending: true }).then(function (res) {
       if (res.error) { console.warn("[review] fetch failed:", res.error.message); return; }
       var server = res.data || [];
-      // keep only un-synced local notes the server hasn't seen; server is truth for the rest.
       var pending = notes.filter(function (n) { return n._pending && !server.some(function (s) { return s.id === n.id; }); });
       notes = server.concat(pending); cacheWrite(); renderAll();
       flushPending();
     });
-  }
-
-  /* ---------------- notes list panel ---------------- */
-  var panel = null;
-  function openPanel() { listOpen = true; renderPanel(); }
-  function closePanel() { listOpen = false; if (panel) { panel.remove(); panel = null; } }
-  function renderPanel() {
-    if (panel) panel.remove();
-    panel = el("div", "wr-panel");
-    var sorted = notes.slice().sort(function (a, b) { return (a.created_at || "") < (b.created_at || "") ? -1 : 1; });
-    var here = sorted.filter(onPage), elsewhere = sorted.filter(function (n) { return !onPage(n); });
-    panel.appendChild(el("h4", null, "Review notes · this page"));
-    if (!here.length) panel.appendChild(el("div", "wr-empty", "No notes on this page yet. Hit “Add note”, then click a spot."));
-    here.forEach(function (n) { panel.appendChild(noteCard(n)); });
-    if (elsewhere.length) {
-      panel.appendChild(el("h4", null, "Other pages (" + elsewhere.length + ")"));
-      elsewhere.forEach(function (n) { panel.appendChild(noteCard(n)); });
-    }
-    root.querySelector(".wr").appendChild(panel);
-    renderDock();
-  }
-  function noteCard(n) {
-    var card = el("div", "wr-card" + (isDone(n) ? " wr-card--done" : ""));
-    card.appendChild(el("div", "wr-num", numberOf(n)));
-    var body = el("div"); body.style.minWidth = "0";
-    var t = el("div", null, n.body || ""); t.setAttribute("dir", "auto");
-    t.style.cssText = "overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
-    body.appendChild(t);
-    var meta = (n.author || "?") + (n.section_id ? " · #" + n.section_id : "") +
-      (isDone(n) ? " · resolved" : "") + (onPage(n) ? "" : " · " + (n.page_url || "/"));
-    body.appendChild(el("div", "wr-meta", meta));
-    card.appendChild(body);
-    card.addEventListener("click", function () { jumpTo(n); });
-    return card;
-  }
-  function jumpTo(note) {
-    if (!onPage(note)) {   // note lives on another page of the site — go there in review mode
-      var u = note.page_url || "/";
-      location.href = u + (u.indexOf("?") >= 0 ? "&" : "?") + "review=1";
-      return;
-    }
-    var a = anchorEl(note);
-    if (a) a.scrollIntoView({ behavior: "smooth", block: "center" });
-    setTimeout(function () {
-      var m = markers.get(note.id);
-      if (m) { m.el.classList.add("wr-pin--pulse"); setTimeout(function () { m.el.classList.remove("wr-pin--pulse"); }, 1800); }
-    }, 350);
+    supa.from("comments").select("*").eq("project_key", BOARD).order("created_at", { ascending: true }).then(function (res) {
+      if (!res.error) { comments = res.data || []; if (sidebarOpen) renderSidebar(); renderAll(); }
+    });
   }
 
   /* ---------------- boot ---------------- */
   renderAll();
   loadSupabase(function () {
-    supa = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnon, {
-      global: { headers: { "x-board-key": BOARD } }
-    });
-    // Self-register this site as a review board (idempotent) so notes have a home,
-    // THEN fetch + flush queued notes (the FK to projects must exist first).
+    supa = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnon, { global: { headers: { "x-board-key": BOARD } } });
     supa.from("projects").upsert(
       { project_key: BOARD, name: document.title || BOARD, site_host: BOARD },
       { onConflict: "project_key" }
@@ -430,6 +564,5 @@
     document.head.appendChild(s);
   }
 
-  // expose a tiny handle for debugging / headless tests
-  window.__wr = { arm: arm, notes: function () { return notes; }, fetch: fetchNotes, board: BOARD };
+  window.__wr = { arm: arm, notes: function () { return notes; }, comments: function () { return comments; }, fetch: fetchNotes, board: BOARD, sidebar: openSidebar };
 })();

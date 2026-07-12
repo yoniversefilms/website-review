@@ -33,6 +33,24 @@ See **[PLAN.md](PLAN.md)** for the full design and rationale.
 2. Run **[migrate-universal-snippet.sql](migrate-universal-snippet.sql)** — lets a site
    self-register its board.
 3. Run **[hardening.sql](hardening.sql)** — locks down destructive writes (see below).
+   Re-run it after updates: the current grant also allows `body` so reviewers can
+   edit their own notes.
+4. Optional: run **[notify.sql](notify.sql)** — pings a GHL Inbound-Webhook workflow on
+   every new note (email "Ruth left a note" with a click-to-review link). Enable the
+   `pg_net` extension first and paste your webhook URL into the file.
+
+## Sync for Claude (auto-discovery)
+
+`node sync.mjs` with **no arguments** pulls **every** board that has notes — any site
+where the block is pasted shows up automatically. That needs the Supabase **secret** key
+in the gitignored file `reviews/secret.local.json`:
+
+```json
+{ "secretKey": "sb_secret_..." }
+```
+
+(Dashboard → Settings → API Keys → Secret keys. NEVER commit it or put it in the
+browser.) Without it, single-board pulls still work: `node sync.mjs <domain-or-slug>`.
 
 ## Use
 
