@@ -149,6 +149,7 @@
     '.wr-row .wr-sp{margin-right:auto;color:#8a93a3;font-size:12px}' +
     '.wr-x{background:none;border:0;font-size:16px;cursor:pointer;color:#8a93a3;padding:2px 6px}' +
     '.wr-hint{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:2147483003;background:#12151c;color:#fff;padding:8px 14px;border-radius:999px;font-size:13px;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.3);max-width:92vw;text-align:center}' +
+    '.wr-ring{outline:3px solid #ffce54 !important;outline-offset:3px;border-radius:999px}' +
     '@media (max-width:600px){.wr-side{width:100vw;max-width:100vw;height:74vh;top:auto;bottom:0;border-left:0;border-top:1px solid #e6e9ef;border-radius:16px 16px 0 0}}' +
     '</style>' +
     '<div class="wr"><div class="wr-overlay" id="ov"></div><div class="wr-dock" id="dock"></div></div>';
@@ -347,6 +348,59 @@
     function done() { var v = inp.value.trim(); if (!v) return inp.focus(); ME = v; try { localStorage.setItem(LS.name, v); } catch (e) {} pop.remove(); next(); }
     ok.addEventListener("click", done);
     inp.addEventListener("keydown", function (e) { if (e.key === "Enter") done(); });
+  }
+
+  /* ---------------- welcome + tour (first session only) ---------------- */
+  var TOUR_KEY = "wr:tour";
+  function markTour() { try { localStorage.setItem(TOUR_KEY, "1"); } catch (e) {} }
+  function openWelcome() {
+    var pop = el("div", "wr-pop"); pop.style.left = "16px"; pop.style.bottom = "70px"; pop.style.top = "auto";
+    var t = el("div", null, "Welcome! You've been invited to review this site.");
+    t.style.cssText = "font-weight:700;margin-bottom:4px";
+    var s = el("div", null, "Leave notes right on the page — they go straight to the site builder. First, what's your name?");
+    s.style.cssText = "color:#697086;font-size:12.5px;line-height:1.45;margin-bottom:9px";
+    pop.appendChild(t); pop.appendChild(s);
+    var inp = el("input"); inp.placeholder = "e.g. Ruth"; inp.setAttribute("dir", "auto"); pop.appendChild(inp);
+    var row = el("div", "wr-row");
+    var skip = el("button", "wr-mini", "Skip tour");
+    var go = el("button", "wr-btn wr-btn--go", "Start tour →");
+    row.appendChild(skip); row.appendChild(go); pop.appendChild(row);
+    wrap.appendChild(pop); try { inp.focus(); } catch (e) {}
+    function save(withTour) {
+      var v = inp.value.trim(); if (!v) return inp.focus();
+      ME = v; try { localStorage.setItem(LS.name, v); } catch (e) {}
+      pop.remove();
+      if (withTour) runTour(0); else markTour();
+    }
+    go.addEventListener("click", function () { save(true); });
+    skip.addEventListener("click", function () { save(false); });
+    inp.addEventListener("keydown", function (e) { if (e.key === "Enter") save(true); });
+  }
+  var TOUR = [
+    { btn: function () { return addBtn; }, title: "Annotate ✒️", body: "Tap Annotate and pick a tool — 📍 pin a spot, ▭ box an area, 🖍 highlight words, ✎ draw. Then mark the page and type what should change." },
+    { btn: function () { return listBtn; }, title: "Notes", body: "Every note lands here. Tap one to jump to its exact spot on the page, reply, or mark it resolved." },
+    { btn: function () { return hideBtn; }, title: "Hide 👁", body: "Hides the review tools so you see the site clean. Tap the blue dot (bottom-left) to bring them back. That's it — happy reviewing!" }
+  ];
+  var tourRing = null;
+  function clearRing() { if (tourRing) { tourRing.classList.remove("wr-ring"); tourRing = null; } }
+  function runTour(i) {
+    clearRing();
+    var old = root.querySelector(".wr-tourpop"); if (old) old.remove();
+    if (i >= TOUR.length) { markTour(); return; }
+    var st = TOUR[i];
+    tourRing = st.btn(); tourRing.classList.add("wr-ring");
+    var pop = el("div", "wr-pop wr-tourpop"); pop.style.left = "16px"; pop.style.bottom = "70px"; pop.style.top = "auto";
+    var head = el("div", "wr-row");
+    head.appendChild(el("div", "wr-sp", (i + 1) + " / " + TOUR.length));
+    var xb = el("button", "wr-x", "✕"); head.appendChild(xb); pop.appendChild(head);
+    var t = el("div", null, st.title); t.style.cssText = "font-weight:700;margin-bottom:4px"; pop.appendChild(t);
+    var b = el("div", null, st.body); b.style.cssText = "color:#697086;font-size:12.5px;line-height:1.5"; pop.appendChild(b);
+    var row = el("div", "wr-row");
+    var next = el("button", "wr-btn wr-btn--go", i === TOUR.length - 1 ? "Done ✓" : "Next →");
+    row.appendChild(next); pop.appendChild(row);
+    wrap.appendChild(pop);
+    xb.addEventListener("click", function () { clearRing(); pop.remove(); markTour(); });
+    next.addEventListener("click", function () { pop.remove(); runTour(i + 1); });
   }
 
   /* ---------------- composer ---------------- */
@@ -613,6 +667,7 @@
 
   /* ---------------- boot ---------------- */
   renderAll();
+  if (!ME) openWelcome(); else markTour();   // returning reviewers (name saved) skip welcome + tour
   loadSupabase(function () {
     supa = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnon, { global: { headers: { "x-board-key": BOARD } } });
     supa.from("projects").upsert({ project_key: BOARD, name: document.title || BOARD, site_host: BOARD }, { onConflict: "project_key" }).then(function (r) { if (r.error) console.warn("[review] board register:", r.error.message); flushPending(); fetchNotes(); });
@@ -623,6 +678,6 @@
     if (window.supabase && window.supabase.createClient) return cb();
     var s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"; s.onload = cb; s.onerror = function () { console.warn("[review] supabase-js failed to load; running offline (localStorage only)."); }; document.head.appendChild(s);
   }
-  window.__wr = { arm: arm, notes: function () { return notes; }, comments: function () { return comments; }, fetch: fetchNotes, board: BOARD, sidebar: openSidebar };
+  window.__wr = { arm: arm, notes: function () { return notes; }, comments: function () { return comments; }, fetch: fetchNotes, board: BOARD, sidebar: openSidebar, tour: function () { runTour(0); } };
 })();
 </script>
