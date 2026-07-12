@@ -26,7 +26,7 @@ create extension if not exists pg_net;
 create or replace function public.notify_new_note() returns trigger
 language plpgsql security definer as $$
 declare
-  ghl_url text := 'PASTE_YOUR_GHL_INBOUND_WEBHOOK_URL';
+  ghl_url text := 'PASTE_YOUR_GHL_INBOUND_WEBHOOK_URL';  -- keep the real URL OUT of the repo (it's a secret)
 begin
   if ghl_url like 'PASTE_%' then return NEW; end if;   -- not configured yet: no-op
   perform net.http_post(

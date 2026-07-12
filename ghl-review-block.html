@@ -78,7 +78,7 @@
     '.wr--collapsed .wr-overlay,.wr--collapsed .wr-dock,.wr--collapsed .wr-side,.wr--collapsed .wr-pop,.wr--collapsed .wr-hint,.wr--collapsed .wr-capture,.wr--collapsed .wr-tray{display:none!important}' +
     /* overlay + shapes */
     '.wr-overlay{position:fixed;inset:0;pointer-events:none;z-index:2147483000}' +
-    '.wr-capture{position:fixed;inset:0;z-index:2147483001;cursor:crosshair;background:rgba(43,108,255,.04)}' +
+    '.wr-capture{position:fixed;inset:0;z-index:2147483001;cursor:crosshair;background:rgba(43,108,255,.04);touch-action:none;overscroll-behavior:contain}' +
     '.wr-rubber{position:fixed;border:2px dashed #2b6cff;background:rgba(43,108,255,.08);z-index:2147483001;pointer-events:none;border-radius:5px}' +
     '.wr-pin{position:fixed;transform:translate(-50%,-100%);pointer-events:auto;cursor:pointer;width:26px;height:26px;z-index:3;' +
       'border:0;border-radius:50% 50% 50% 2px;background:#2b6cff;color:#fff;font:600 12px/1 inherit;' +
@@ -244,30 +244,33 @@
     var a = resolveAnchor(e.clientX, e.clientY, probe(e.clientX, e.clientY));
     disarm(); ensureName(function () { openComposer(e.clientX, e.clientY, a, "pin"); });
   }
+  function grab(e) { try { captureLayer.setPointerCapture(e.pointerId); } catch (err) {} }
   function armBox() {
     var start = null;
-    captureLayer.addEventListener("mousedown", function (e) { e.preventDefault(); start = { x: e.clientX, y: e.clientY }; live = el("div", "wr-rubber"); wrap.appendChild(live); setRect(live, e.clientX, e.clientY, e.clientX, e.clientY); });
-    captureLayer.addEventListener("mousemove", function (e) { if (start && live) setRect(live, start.x, start.y, e.clientX, e.clientY); });
-    captureLayer.addEventListener("mouseup", function (e) {
+    captureLayer.addEventListener("pointerdown", function (e) { e.preventDefault(); grab(e); start = { x: e.clientX, y: e.clientY }; live = el("div", "wr-rubber"); wrap.appendChild(live); setRect(live, e.clientX, e.clientY, e.clientX, e.clientY); });
+    captureLayer.addEventListener("pointermove", function (e) { if (start && live) { e.preventDefault(); setRect(live, start.x, start.y, e.clientX, e.clientY); } });
+    captureLayer.addEventListener("pointerup", function (e) {
       if (!start) return; var s = start; start = null; if (live) { live.remove(); live = null; }
       var x = Math.min(s.x, e.clientX), y = Math.min(s.y, e.clientY), w = Math.abs(e.clientX - s.x), h = Math.abs(e.clientY - s.y);
       if (w < 6 || h < 6) { disarm(); return; }
       var a = regionAnchor(x, y, w, h); disarm(); ensureName(function () { openComposer(x, y, a, "box"); });
     });
+    captureLayer.addEventListener("pointercancel", function () { start = null; if (live) { live.remove(); live = null; } });
   }
   function armDraw() {
     var drawing = false, pts = [], poly = null;
     captureLayer.addEventListener("pointerdown", function (e) {
-      e.preventDefault(); drawing = true; pts = [[e.clientX, e.clientY]];
+      e.preventDefault(); grab(e); drawing = true; pts = [[e.clientX, e.clientY]];
       live = svg("svg"); live.setAttribute("class", "wr-draw"); live.style.cssText = "position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:2147483001";
       poly = svg("polyline"); poly.setAttribute("points", e.clientX + "," + e.clientY); live.appendChild(poly); wrap.appendChild(live);
     });
-    captureLayer.addEventListener("pointermove", function (e) { if (!drawing) return; pts.push([e.clientX, e.clientY]); poly.setAttribute("points", pts.map(function (p) { return p[0] + "," + p[1]; }).join(" ")); });
+    captureLayer.addEventListener("pointermove", function (e) { if (!drawing) return; e.preventDefault(); pts.push([e.clientX, e.clientY]); poly.setAttribute("points", pts.map(function (p) { return p[0] + "," + p[1]; }).join(" ")); });
     captureLayer.addEventListener("pointerup", function () {
       if (!drawing) return; drawing = false; if (live) { live.remove(); live = null; }
       if (pts.length < 2) { disarm(); return; }
       var a = drawAnchor(pts); disarm(); ensureName(function () { openComposer(a._x, a._y, a, "draw"); });
     });
+    captureLayer.addEventListener("pointercancel", function () { drawing = false; if (live) { live.remove(); live = null; } });
   }
   function setRect(node, x1, y1, x2, y2) { node.style.left = Math.min(x1, x2) + "px"; node.style.top = Math.min(y1, y2) + "px"; node.style.width = Math.abs(x2 - x1) + "px"; node.style.height = Math.abs(y2 - y1) + "px"; }
 
