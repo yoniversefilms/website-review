@@ -1,50 +1,74 @@
 # Website Review Tool
 
 Reusable visual-feedback embed for websites you build. A reviewer opens a share-link and
-annotates the live page — **point pins** and **text highlights** (box + freehand later),
-with **photo attachments** and notes, **no login**. Feedback syncs into a file in the
-site's repo that **Claude Code reads and turns into edits you approve** before they ship.
+annotates the live page — **point pins** with notes and (soon) photos, **no login**.
+Feedback syncs into a file in the site's repo that **Claude Code reads and turns into
+edits you approve** before they ship, then "resolved" flows back to the reviewer.
 
-Reuses the HomeApp (`sc-rentals`) stack: static HTML, `supabase-js` via CDN, no build
-step, public publishable key + Row-Level Security, a capability-URL "board" per project,
-realtime, and a localStorage offline cache.
+Reuses the HomeApp (`sc-rentals`) stack: static HTML on GitHub Pages, `supabase-js` via
+CDN, no build step, public publishable key + Row-Level Security, a "board" per site, and
+a localStorage offline cache.
 
 See **[PLAN.md](PLAN.md)** for the full design and rationale.
 
+## How it's wired
+
+- **Hosted at** `https://yoniversefilms.github.io/website-review/` (repo Pages).
+- **One universal block** (`ghl-review-loader.html`) is pasted into a site's
+  **GHL → Settings → Tracking Code → Body** (Save + Re-publish). It's dormant for normal
+  visitors and loads nothing until the URL has `?review` (e.g. `?review=1`).
+- **Board = the site's own domain** — no per-site key; the widget self-registers the board
+  on first use. Because the block loads `embed.js` from Pages, improving the widget updates
+  every site with no re-paste.
+
 ## Supabase project
 
-- Project: **Website Review v1** — `https://vfdhlrikxcdturtvyxel.supabase.co`
-- Browser key: the **publishable** key (`sb_publishable_…`), in [config.js](config.js).
+- **Website Review v1** — `https://vfdhlrikxcdturtvyxel.supabase.co`
+- Browser key: the **publishable** key (`sb_publishable_…`) in [config.js](config.js).
   The **secret** key is never used client-side.
 
-## Setup (once)
+## Setup (once, in the SQL Editor)
 
-1. In the **SQL Editor**, paste **[schema.sql](schema.sql)** and **Run**. The final
-   statement provisions the Ruth project and returns its `project_key` — **copy it**.
-   (Lost it? Run `select project_key, name from public.projects;`.)
-2. `config.js` already holds the Project URL + publishable key.
+1. Run **[schema.sql](schema.sql)** — tables, RLS, storage, realtime.
+2. Run **[migrate-universal-snippet.sql](migrate-universal-snippet.sql)** — lets a site
+   self-register its board.
+3. Run **[hardening.sql](hardening.sql)** — locks down destructive writes (see below).
 
-## Use (once the widget lands — Phase 2+)
+## Use
 
-- Paste the embed snippet into the reviewed site's `index.html` (before `</body>`).
-- Send the reviewer: `https://<site>/?review=<project_key>`
-- Pull feedback for Claude:  `node sync.mjs ruth`         *(Phase 3)*
-- Push resolved status back:  `node sync.mjs ruth --push`  *(Phase 4)*
+- Paste the loader block (`ghl-review-loader.html`) into the site; send the reviewer the
+  site URL + `?review=1`.
+- Pull feedback for Claude:   `node sync.mjs <slug>`
+- Push resolved status back:  `node sync.mjs <slug> --push`  (edit only `feedback.json`)
+- Re-pull discarding local edits: `node sync.mjs <slug> --force`
 
 ## Build status
 
 - [x] **Phase 0** — `schema.sql`: data model, RLS, storage, realtime
-- [x] **Phase 1** — Supabase round-trip smoke test (`smoke-test.html`) — verified 6/7
-- [x] **Phase 2** — widget (`embed.js`): pin capture, end-to-end on the Ruth site — verified
-- [ ] **Phase 3** — `sync.mjs` pull → `feedback.md` → Claude proposes an edit
-- [ ] **Phase 4** — approve + push status back (reviewer sees "resolved" live)
+- [x] **Phase 1** — Supabase round-trip smoke test — verified
+- [x] **Phase 2** — widget (`embed.js`): pin capture, hosted, universal snippet — verified
+- [x] **Phase 3** — `sync.mjs` pull → `feedback.md` → Claude proposes an edit — verified
+- [x] **Phase 4** — conflict-safe push of status/resolution back to the reviewer — verified
+- [x] **Hardening** — column-scoped writes, append-only comments, locked storage, prompt-injection fencing
 - [ ] **Phase 5** — text-highlight tool + photo uploads
-- [ ] **Phase 6** — box + freehand tools, console/dashboard, hardening
+- [ ] **Phase 6** — box + freehand tools, dashboard, new-note notification
 
 ## Security model (honest)
 
-Capability-URL: the project key in the reviewer link **is** the access credential — treat
-it like a password. The publishable key is public by design; RLS + the key are the whole
-boundary. One key per project means the reviewer's browser technically *can* change status
-or delete notes (the owner/reviewer split is UI-only in v1) — fine for a founder + a few
-trusted reviewers. Details and the upgrade path (Supabase Auth) are in `PLAN.md §8`.
+**The board key is the site's public domain by design** — it is *not* a secret. That's the
+price of the zero-setup universal snippet: RLS scopes each request to one board, but anyone
+who views a site's page source (or guesses the domain) can, with the public publishable key,
+**read that board's feedback and post notes to it**. That's an accepted trade-off for
+low-sensitivity marketing-site review.
+
+`hardening.sql` removes the *destructive* exposure: strangers can no longer rewrite note
+bodies/authors (UPDATE is column-scoped to status/resolution), wipe comments or photos
+(append-only + upload-only storage), or host arbitrary files (image/≤5 MB bucket limits).
+
+Reviewer text is treated as **untrusted data**: `feedback.md` fences every reviewer field
+and carries a trust-boundary preamble, so a note can't smuggle instructions to Claude.
+
+**If a client's feedback needs real confidentiality:** give that site a secret UUID board
+instead of the domain — pass it via `?board=<uuid>`, `data-review-key`, or
+`WR_CONFIG.projectKey` — and treat that reviewer link as the password. Works today, no code
+change. Full details and the Supabase-Auth upgrade path are in `PLAN.md §8`.

@@ -190,17 +190,33 @@ note (photos queue in IndexedDB, which has room; localStorage doesn't).
 
 ## 8. Security & honest limits (state these to any client)
 
-- **Capability-URL model:** whoever holds a link can act. Reviewer link = edit rights for
-  that project. Treat links like passwords (same as HomeApp).
-- **One key per project** -> RLS can't distinguish "owner" from "reviewer"; the reviewer's
-  browser technically *can* set status or delete notes. The owner/reviewer split is
-  UI-only in v1. Fine for a founder + a few trusted reviewers; not for adversarial input.
-- **Publishable key is public by design** — RLS + key secrecy is the whole boundary, so
-  the policies must ship before any real data. Cross-project isolation is proven by
-  HomeApp's "different boards can't see each other."
-- **Console isn't self-protected** — it's owner-only because you never publish its URL.
-- Clean upgrade path if you ever need real logins: Supabase Auth magic-link + swap RLS
-  from the header key to `auth.uid()`. Not needed now.
+**The default board key is the site's PUBLIC domain — not a secret.** This is the price of
+the zero-setup universal snippet (one block on every site, `board = location.hostname`).
+Consequences, stated plainly:
+
+- **Anyone who knows a site's domain** + the public publishable key (it ships in the page)
+  can present `x-board-key: <domain>` and **read that board's feedback and post notes to
+  it.** RLS still scopes each request to one board, but the "capability" isn't secret, so
+  cross-board *isolation* holds only against people who don't know the domain (i.e. nobody).
+  Accepted trade-off for low-sensitivity marketing-site review.
+- **`hardening.sql` removes the destructive exposure** (the part that isn't acceptable):
+  UPDATE on `notes` is column-scoped to `status/resolution/updated_by` (no rewriting note
+  bodies/authors); `comments`/`attachments` are append-only (no anon DELETE); storage is
+  upload-only with image/≤5 MB limits (no wiping/overwriting photos, no arbitrary file
+  hosting). Note *delete* stays open (a reviewer removing their own note is intended;
+  recoverable, low-value — documented accepted risk).
+- **Reviewer text is untrusted data.** Anyone can post a note, and `feedback.md` is read by
+  Claude — so every reviewer field is fenced as data with a trust-boundary preamble, and
+  side-effectful requests found in notes must be surfaced to Yonatan, never executed.
+- **Publishable key is public by design** — safe to ship; RLS + the hardening above are the
+  boundary. The policies must exist before any real data.
+
+**When a client needs real confidentiality:** give that site a **secret UUID board** instead
+of the domain — pass it via `?board=<uuid>`, `data-review-key`, or `WR_CONFIG.projectKey`,
+and treat the reviewer link as the password. The widget already prefers those overrides
+ahead of the hostname; `schema.sql §9` still mints UUID project keys. No code change needed.
+Clean further upgrade for named logins: Supabase Auth magic-link + swap RLS from the header
+key to `auth.uid()`.
 
 ---
 

@@ -52,6 +52,9 @@
   var armed = false;                         // pin tool armed?
   var markers = new Map();                    // note.id -> {el, note}
   var listOpen = false;
+  function pageKey() { return (location.pathname.replace(/\/+$/, "") || "/") + location.hash; }
+  var PAGE = pageKey();                        // notes are scoped to this page of the domain
+  function onPage(n) { return (n.page_url || "/") === PAGE; }
 
   /* ---------------- shadow root + styles ---------------- */
   var host = document.createElement("div");
@@ -102,7 +105,7 @@
   var dock = root.getElementById("dock");
 
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
-  function openCount() { return notes.filter(function (n) { return n.status !== "resolved" && n.status !== "wont_fix"; }).length; }
+  function openCount() { return notes.filter(function (n) { return onPage(n) && n.status !== "resolved" && n.status !== "wont_fix"; }).length; }
 
   /* ---------------- dock (launcher) ---------------- */
   var addBtn = el("button", "wr-btn wr-btn--go");
@@ -136,36 +139,61 @@
   function onCaptureClick(e) {
     e.preventDefault(); e.stopPropagation();
     var x = e.clientX, y = e.clientY;
+    // Hide our own layers so elementFromPoint returns the real page element,
+    // not the capture layer or an existing pin (which retargets to the host).
     captureLayer.style.pointerEvents = "none";
+    var ovDisp = overlay.style.display; overlay.style.display = "none";
     var target = document.elementFromPoint(x, y) || document.body;
-    captureLayer.style.pointerEvents = "";
+    overlay.style.display = ovDisp; captureLayer.style.pointerEvents = "";
     var a = resolveAnchor(x, y, target);
     disarm();
     ensureName(function () { openComposer(x, y, a); });
   }
 
   /* ---------------- anchoring (D1: nearest id + fractional xy) ------- */
+  function esc(id) { return window.CSS && CSS.escape ? CSS.escape(id) : id; }
+  function grabText(elm) {
+    if (!elm || elm === document.body) return null;
+    var t = (elm.innerText || elm.value || elm.placeholder || elm.alt ||
+             (elm.getAttribute && elm.getAttribute("aria-label")) || "").trim().replace(/\s+/g, " ");
+    if (!t || t.length > 160) return null;      // empty, or a whole container — not a useful quote
+    return t.slice(0, 120);
+  }
   function resolveAnchor(clientX, clientY, targetEl) {
-    var a = targetEl;
-    while (a && a !== document.body && !a.id) a = a.parentElement;
+    var clicked = targetEl;
+    if (clicked === host || (clicked && clicked.id === "wr-root")) clicked = document.body;
+    var a = clicked;
+    while (a && a !== document.body && (!a.id || a.id === "wr-root")) a = a.parentElement;
     if (!a || !a.id) a = document.body;
-    var rect = a.getBoundingClientRect();
+    var baseSel = a.id ? "#" + esc(a.id) : "body";
+    // 2-hop: pin to the CLICKED element when a verified selector reaches it, else the section.
+    var selector = baseSel, geoEl = a;
+    if (clicked && clicked !== a && clicked.tagName) {
+      var hop = clicked.tagName.toLowerCase() +
+        (clicked.classList && clicked.classList.length ? "." + Array.prototype.join.call(clicked.classList, ".") : "");
+      var twoHop = baseSel + " " + hop;
+      try { if (document.querySelector(twoHop) === clicked) { selector = twoHop; geoEl = clicked; } } catch (e) {}
+    }
+    var rect = geoEl.getBoundingClientRect();
     var fx = rect.width ? (clientX - rect.left) / rect.width : 0.5;
     var fy = rect.height ? (clientY - rect.top) / rect.height : 0.5;
-    var selector = a.id ? "#" + (window.CSS && CSS.escape ? CSS.escape(a.id) : a.id) : "body";
+    var text = grabText(clicked);
     var h = a.querySelector ? a.querySelector("h1,h2,h3,h4") : null;
-    var desc = (a.tagName ? a.tagName.toLowerCase() : "el") + (a.id ? " #" + a.id : "") +
+    var desc = (clicked && clicked.tagName ? clicked.tagName.toLowerCase() : "el") + (a.id ? " in #" + a.id : "") +
       (h && h.textContent ? ' — "' + h.textContent.trim().slice(0, 40) + '"' : "");
-    return { section_id: a.id || null, selector: selector, fx: fx, fy: fy, desc: desc };
+    return { section_id: a.id || null, selector: selector, fx: fx, fy: fy, target_text: text, desc: desc };
   }
   function anchorEl(note) {
     var a = null;
     try { a = note.target_selector && document.querySelector(note.target_selector); } catch (e) {}
     if (!a && note.section_id) a = document.getElementById(note.section_id);
-    return a || document.body || document.documentElement;
+    return a || null;   // null => can't locate on this page; caller hides the pin (recovers on next placeAll)
   }
   function placeMarker(m) {
-    var r = anchorEl(m.note).getBoundingClientRect();
+    var a = anchorEl(m.note);
+    if (!a) { m.el.style.display = "none"; return; }
+    m.el.style.display = "";
+    var r = a.getBoundingClientRect();
     var g = m.note.geometry || {};
     m.el.style.left = (r.left + (g.x != null ? g.x : 0.5) * r.width) + "px";
     m.el.style.top = (r.top + (g.y != null ? g.y : 0.5) * r.height) + "px";
@@ -173,6 +201,7 @@
   function placeAll() { markers.forEach(placeMarker); }
   window.addEventListener("scroll", placeAll, { passive: true });
   window.addEventListener("resize", placeAll);
+  window.addEventListener("hashchange", function () { PAGE = pageKey(); renderAll(); });
 
   /* ---------------- markers ---------------- */
   function numberOf(note) {
@@ -181,11 +210,20 @@
   }
   function addMarker(note) {
     var m = markers.get(note.id);
-    if (m) { m.note = note; m.el.firstChild.textContent = numberOf(note); m.el.className = "wr-pin" + (isDone(note) ? " wr-pin--done" : ""); placeMarker(m); return; }
+    if (m) {
+      m.note = note; m.el.firstChild.textContent = numberOf(note);
+      m.el.className = "wr-pin" + (isDone(note) ? " wr-pin--done" : "");
+      m.el.title = (note.author || "?") + ": " + (note.body || "");
+      placeMarker(m); return;
+    }
     var b = el("button", "wr-pin" + (isDone(note) ? " wr-pin--done" : ""));
     b.appendChild(el("span", null, numberOf(note)));
     b.title = (note.author || "?") + ": " + (note.body || "");
-    b.addEventListener("click", function (e) { e.stopPropagation(); openNote(note, b); });
+    b.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var cur = markers.get(note.id);          // open the LIVE note, not the creation-time closure
+      openNote(cur ? cur.note : note, b);
+    });
     overlay.appendChild(b);
     m = { el: b, note: note }; markers.set(note.id, m); placeMarker(m);
   }
@@ -193,7 +231,7 @@
   function removeMarker(id) { var m = markers.get(id); if (m) { m.el.remove(); markers.delete(id); } }
   function renderAll() {
     var seen = {};
-    notes.forEach(function (n) { seen[n.id] = 1; addMarker(n); });
+    notes.forEach(function (n) { if (onPage(n)) { seen[n.id] = 1; addMarker(n); } });
     markers.forEach(function (_, id) { if (!seen[id]) removeMarker(id); });
     renderDock(); if (listOpen) renderPanel();
   }
@@ -203,7 +241,7 @@
     if (ME) return next();
     var pop = el("div", "wr-pop"); pop.style.left = "16px"; pop.style.bottom = "64px"; pop.style.top = "auto";
     pop.innerHTML = "<div style='font-weight:600;margin-bottom:8px'>What's your name?</div>";
-    var inp = el("input"); inp.placeholder = "e.g. Ruth"; pop.appendChild(inp);
+    var inp = el("input"); inp.placeholder = "e.g. Ruth"; inp.setAttribute("dir", "auto"); pop.appendChild(inp);
     var row = el("div", "wr-row"); var ok = el("button", "wr-btn wr-btn--go", "Continue"); row.appendChild(ok); pop.appendChild(row);
     root.querySelector(".wr").appendChild(pop); inp.focus();
     function done() { var v = inp.value.trim(); if (!v) return inp.focus(); ME = v; try { localStorage.setItem(LS.name, v); } catch (e) {} pop.remove(); next(); }
@@ -224,9 +262,10 @@
   function openComposer(x, y, a) {
     closePop();
     var pop = el("div", "wr-pop");
-    var head = el("div", "wr-row"); head.innerHTML = "<div class='wr-sp'>New note · " + (a.section_id ? "#" + a.section_id : "page") + "</div>";
+    var head = el("div", "wr-row");
+    head.appendChild(el("div", "wr-sp", "New note · " + (a.section_id ? "#" + a.section_id : "page")));
     var xb = el("button", "wr-x", "✕"); head.appendChild(xb); pop.appendChild(head);
-    var ta = el("textarea"); ta.placeholder = "What should change here?"; pop.appendChild(ta);
+    var ta = el("textarea"); ta.placeholder = "What should change here?"; ta.setAttribute("dir", "auto"); pop.appendChild(ta);
     var row = el("div", "wr-row"); var save = el("button", "wr-btn wr-btn--go", "Save note"); row.appendChild(save); pop.appendChild(row);
     openPop = pop; positionPop(pop, x, y); ta.focus();
     xb.addEventListener("click", closePop);
@@ -234,7 +273,7 @@
       var body = ta.value.trim(); if (!body) return ta.focus();
       closePop();
       saveNote({
-        kind: "pin", section_id: a.section_id, target_selector: a.selector, elem_desc: a.desc,
+        kind: "pin", section_id: a.section_id, target_selector: a.selector, target_text: a.target_text, elem_desc: a.desc,
         geometry: { x: round(a.fx), y: round(a.fy) }, viewport_w: innerWidth, viewport_h: innerHeight, body: body
       });
     }
@@ -249,10 +288,10 @@
     var r = markerEl.getBoundingClientRect();
     var pop = el("div", "wr-pop");
     var head = el("div", "wr-row");
-    head.innerHTML = "<div class='wr-sp'>#" + numberOf(note) + " · " + (note.author || "?") +
-      (note.section_id ? " · #" + note.section_id : "") + "</div>";
+    head.appendChild(el("div", "wr-sp", "#" + numberOf(note) + " · " + (note.author || "?") +
+      (note.section_id ? " · #" + note.section_id : "")));
     var xb = el("button", "wr-x", "✕"); head.appendChild(xb); pop.appendChild(head);
-    pop.appendChild(el("div", "wr-read", note.body || ""));
+    var read = el("div", "wr-read", note.body || ""); read.setAttribute("dir", "auto"); pop.appendChild(read);
     if (note.resolution) { var res = el("div", "wr-meta", "Resolved: " + note.resolution); res.style.marginTop = "8px"; pop.appendChild(res); }
     var row = el("div", "wr-row");
     var toggle = el("button", "wr-btn wr-btn--ghost", isDone(note) ? "Reopen" : "Mark resolved");
@@ -275,29 +314,44 @@
   }
   function saveNote(partial) {
     var rec = Object.assign({
-      id: uid(), project_key: BOARD, kind: "pin", page_url: location.pathname, page_title: document.title,
+      id: uid(), project_key: BOARD, kind: "pin", page_url: PAGE, page_title: document.title,
       status: "open", author: ME, author_id: AID, created_at: new Date().toISOString(), updated_at: new Date().toISOString()
     }, partial);
+    rec._pending = true;                        // not yet confirmed on the server
     notes.push(rec); cacheWrite(); renderAll();
-    if (!supa) return;
+    flushOne(rec);
+  }
+  function flushOne(rec) {
+    if (!supa || !rec._pending) return;
     supa.from("notes").insert(colsOf(rec)).then(function (res) {
-      if (res.error) console.warn("[review] insert failed (cached locally):", res.error.message);
+      if (res.error) { console.warn("[review] insert queued (will retry on next sync):", res.error.message); return; }
+      delete rec._pending; cacheWrite();
     });
   }
+  function flushPending() { notes.slice().forEach(function (n) { if (n._pending) flushOne(n); }); }
   function setStatus(note, status) {
-    note.status = status; note.updated_at = new Date().toISOString(); note.updated_by = ME;
+    var live = notes.filter(function (n) { return n.id === note.id; })[0] || note;
+    live.status = status; live.updated_at = new Date().toISOString(); live.updated_by = ME;
+    if (status !== "resolved" && status !== "wont_fix") live.resolution = null;   // reopen clears stale resolution
     cacheWrite(); renderAll();
-    if (supa) supa.from("notes").update({ status: status, updated_by: ME }).eq("id", note.id).then(function (r) { if (r.error) console.warn(r.error.message); });
+    if (live._pending) { flushOne(live); return; }   // whole record (incl. new status) goes up on flush
+    if (supa) supa.from("notes").update({ status: status, updated_by: ME, resolution: live.resolution || null }).eq("id", live.id).then(function (r) { if (r.error) console.warn(r.error.message); });
   }
   function deleteNote(note) {
-    notes = notes.filter(function (n) { return n.id !== note.id; }); removeMarker(note.id); cacheWrite(); renderAll();
-    if (supa) supa.from("notes").delete().eq("id", note.id).then(function (r) { if (r.error) console.warn(r.error.message); });
+    var wasPending = false;
+    notes = notes.filter(function (n) { if (n.id === note.id) { wasPending = n._pending; return false; } return true; });
+    removeMarker(note.id); cacheWrite(); renderAll();
+    if (!wasPending && supa) supa.from("notes").delete().eq("id", note.id).then(function (r) { if (r.error) console.warn(r.error.message); });
   }
   function fetchNotes() {
     if (!supa) return;
     supa.from("notes").select("*").eq("project_key", BOARD).order("created_at", { ascending: true }).then(function (res) {
       if (res.error) { console.warn("[review] fetch failed:", res.error.message); return; }
-      notes = res.data || []; cacheWrite(); renderAll();
+      var server = res.data || [];
+      // keep only un-synced local notes the server hasn't seen; server is truth for the rest.
+      var pending = notes.filter(function (n) { return n._pending && !server.some(function (s) { return s.id === n.id; }); });
+      notes = server.concat(pending); cacheWrite(); renderAll();
+      flushPending();
     });
   }
 
@@ -308,26 +362,40 @@
   function renderPanel() {
     if (panel) panel.remove();
     panel = el("div", "wr-panel");
-    panel.appendChild(el("h4", null, "Review notes"));
     var sorted = notes.slice().sort(function (a, b) { return (a.created_at || "") < (b.created_at || "") ? -1 : 1; });
-    if (!sorted.length) panel.appendChild(el("div", "wr-empty", "No notes yet. Hit “Add note”, then click a spot on the page."));
-    sorted.forEach(function (n) {
-      var card = el("div", "wr-card" + (isDone(n) ? " wr-card--done" : ""));
-      card.appendChild(el("div", "wr-num", numberOf(n)));
-      var body = el("div"); body.style.minWidth = "0";
-      var t = el("div", null, n.body || ""); t.style.cssText = "overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
-      body.appendChild(t);
-      body.appendChild(el("div", "wr-meta", (n.author || "?") + (n.section_id ? " · #" + n.section_id : "") + (isDone(n) ? " · resolved" : "")));
-      card.appendChild(body);
-      card.addEventListener("click", function () { jumpTo(n); });
-      panel.appendChild(card);
-    });
+    var here = sorted.filter(onPage), elsewhere = sorted.filter(function (n) { return !onPage(n); });
+    panel.appendChild(el("h4", null, "Review notes · this page"));
+    if (!here.length) panel.appendChild(el("div", "wr-empty", "No notes on this page yet. Hit “Add note”, then click a spot."));
+    here.forEach(function (n) { panel.appendChild(noteCard(n)); });
+    if (elsewhere.length) {
+      panel.appendChild(el("h4", null, "Other pages (" + elsewhere.length + ")"));
+      elsewhere.forEach(function (n) { panel.appendChild(noteCard(n)); });
+    }
     root.querySelector(".wr").appendChild(panel);
     renderDock();
   }
+  function noteCard(n) {
+    var card = el("div", "wr-card" + (isDone(n) ? " wr-card--done" : ""));
+    card.appendChild(el("div", "wr-num", numberOf(n)));
+    var body = el("div"); body.style.minWidth = "0";
+    var t = el("div", null, n.body || ""); t.setAttribute("dir", "auto");
+    t.style.cssText = "overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
+    body.appendChild(t);
+    var meta = (n.author || "?") + (n.section_id ? " · #" + n.section_id : "") +
+      (isDone(n) ? " · resolved" : "") + (onPage(n) ? "" : " · " + (n.page_url || "/"));
+    body.appendChild(el("div", "wr-meta", meta));
+    card.appendChild(body);
+    card.addEventListener("click", function () { jumpTo(n); });
+    return card;
+  }
   function jumpTo(note) {
+    if (!onPage(note)) {   // note lives on another page of the site — go there in review mode
+      var u = note.page_url || "/";
+      location.href = u + (u.indexOf("?") >= 0 ? "&" : "?") + "review=1";
+      return;
+    }
     var a = anchorEl(note);
-    a.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (a) a.scrollIntoView({ behavior: "smooth", block: "center" });
     setTimeout(function () {
       var m = markers.get(note.id);
       if (m) { m.el.classList.add("wr-pin--pulse"); setTimeout(function () { m.el.classList.remove("wr-pin--pulse"); }, 1800); }
@@ -340,12 +408,16 @@
     supa = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnon, {
       global: { headers: { "x-board-key": BOARD } }
     });
-    // Self-register this site as a review board (idempotent) so notes have a home.
+    // Self-register this site as a review board (idempotent) so notes have a home,
+    // THEN fetch + flush queued notes (the FK to projects must exist first).
     supa.from("projects").upsert(
       { project_key: BOARD, name: document.title || BOARD, site_host: BOARD },
       { onConflict: "project_key" }
-    ).then(function (r) { if (r.error) console.warn("[review] board register:", r.error.message); });
-    fetchNotes();
+    ).then(function (r) {
+      if (r.error) console.warn("[review] board register:", r.error.message);
+      flushPending();
+      fetchNotes();
+    });
   });
   window.addEventListener("focus", fetchNotes);
   document.addEventListener("visibilitychange", function () { if (!document.hidden) fetchNotes(); });
