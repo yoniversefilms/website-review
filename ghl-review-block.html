@@ -396,7 +396,12 @@
     if (!onPage(n)) meta.appendChild(el("span", "wr-tag", n.page_url || "/"));
     main.appendChild(meta);
     head.appendChild(main);
-    head.addEventListener("click", function () { expandedId = open ? null : n.id; renderSidebar(); renderAll(); });
+    head.addEventListener("click", function () {
+      var opening = !open;
+      expandedId = opening ? n.id : null;
+      renderSidebar(); renderAll();
+      if (opening) jumpTo(n);            // clicking a card jumps the page to its pin + pulses it
+    });
     c.appendChild(head);
     if (open) c.appendChild(cardBody(n));
     return c;

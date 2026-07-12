@@ -10,3 +10,7 @@ reviews/*/photos/
 # Supabase secret key for sync.mjs auto-discovery — NEVER commit
 reviews/secret.local.json
 .env
+
+# Tower: machine-written session state (folder stays tracked for curated TASKS.md)
+tower/status.json
+tower/.status.*.tmp
