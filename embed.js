@@ -4,13 +4,13 @@
  * Paste before </body> (or via GHL Tracking Code > Body):
  *   <script>window.WR_CONFIG = { supabaseUrl:"…", supabaseAnon:"…" };</script>
  *   <script src=".../embed.js" defer></script>
- * DORMANT for normal visitors; activates only when the URL has ?review (any
- * value). Board = the site's own domain (universal snippet). Overrides:
- * ?board=<id>, data-review-key on the tag, or WR_CONFIG.projectKey.
+ * DORMANT for visitors; activates only when the URL has ?review (any value).
+ * Board = the site's own domain (universal snippet). Overrides: ?board=<id>,
+ * data-review-key on the tag, or WR_CONFIG.projectKey.
  *
- * UI: point-pin capture + a right-hand sidebar of note cards with threaded
- * replies, edit-your-own-note, resolve, a Hide toggle (review the site clean),
- * and layout scoping (📱 mobile / 💻 desktop notes kept separate).
+ * Tools: 📍 pin · ▭ box/circle · 🖍 text-highlight · ✎ freehand draw.
+ * UI: right-hand sidebar of note cards (threaded replies, edit-your-own,
+ * resolve), a Hide toggle (review the site clean), layout scoping (📱/💻).
  * Data: optimistic localStorage cache + pending-queue retry; Supabase via RLS.
  * ===================================================================== */
 (function () {
@@ -35,7 +35,7 @@
   }
   window.__wrLoaded = true;
 
-  /* ---------------- identity + local cache (no login) ---------------- */
+  /* ---------------- identity + local cache ---------------- */
   var LS = { name: "wr:name", aid: "wr:aid", notes: "wr:notes:" + BOARD };
   function uid() { return (crypto.randomUUID && crypto.randomUUID()) || (Date.now() + "-" + Math.random().toString(16).slice(2)); }
   var ME = "", AID = "";
@@ -48,12 +48,10 @@
   var supa = null;
   var notes = cacheRead();
   var comments = [];
-  var armed = false;
-  var markers = new Map();                     // note.id -> {el, note}
-  var sidebarOpen = false;
-  var collapsed = false;                       // Hide toggle: everything down to a dot
-  var expandedId = null;                       // which card is expanded in the sidebar
-  var layoutFilter = "current";                // 'current' | 'all'
+  var armed = false, tool = "pin";
+  var markers = new Map();
+  var sidebarOpen = false, collapsed = false, expandedId = null, layoutFilter = "current";
+  var TOOLS = { pin: "📍 Pin", box: "▭ Box", text: "🖍 Highlight", draw: "✎ Draw" };
 
   function pageKey() { return (location.pathname.replace(/\/+$/, "") || "/") + location.hash; }
   var PAGE = pageKey();
@@ -62,7 +60,7 @@
   function layoutOf(n) { var w = n.viewport_w || 0; return w ? (w < 768 ? "mobile" : "desktop") : "unknown"; }
   function onPage(n) { return (n.page_url || "/") === PAGE; }
   function onLayout(n) { return layoutFilter === "all" || layoutOf(n) === CUR || layoutOf(n) === "unknown"; }
-  function renderable(n) { return onPage(n) && onLayout(n); }   // gets a pin on THIS page+layout
+  function renderable(n) { return onPage(n) && onLayout(n); }
 
   /* ---------------- shadow root + styles ---------------- */
   var host = document.createElement("div");
@@ -74,44 +72,50 @@
     '<style>' +
     ':host,*{box-sizing:border-box}' +
     '.wr{direction:ltr;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;color:#12151c}' +
-    '.wr--collapsed .wr-overlay,.wr--collapsed .wr-dock,.wr--collapsed .wr-side,.wr--collapsed .wr-pop,.wr--collapsed .wr-hint,.wr--collapsed .wr-capture{display:none!important}' +
-    /* pins */
+    '.wr--collapsed .wr-overlay,.wr--collapsed .wr-dock,.wr--collapsed .wr-side,.wr--collapsed .wr-pop,.wr--collapsed .wr-hint,.wr--collapsed .wr-capture,.wr--collapsed .wr-tray{display:none!important}' +
+    /* overlay + shapes */
     '.wr-overlay{position:fixed;inset:0;pointer-events:none;z-index:2147483000}' +
     '.wr-capture{position:fixed;inset:0;z-index:2147483001;cursor:crosshair;background:rgba(43,108,255,.04)}' +
-    '.wr-pin{position:fixed;transform:translate(-50%,-100%);pointer-events:auto;cursor:pointer;width:26px;height:26px;' +
+    '.wr-rubber{position:fixed;border:2px dashed #2b6cff;background:rgba(43,108,255,.08);z-index:2147483001;pointer-events:none;border-radius:5px}' +
+    '.wr-pin{position:fixed;transform:translate(-50%,-100%);pointer-events:auto;cursor:pointer;width:26px;height:26px;z-index:3;' +
       'border:0;border-radius:50% 50% 50% 2px;background:#2b6cff;color:#fff;font:600 12px/1 inherit;' +
       'display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.35);rotate:-45deg}' +
     '.wr-pin>span{rotate:45deg}' +
     '.wr-pin--done{background:#48b98a}' +
-    '.wr-pin--sel{outline:3px solid rgba(43,108,255,.4);outline-offset:2px}' +
     '.wr-pin--pulse{animation:wrp .9s ease 2}' +
     '@keyframes wrp{0%,100%{box-shadow:0 2px 8px rgba(0,0,0,.35)}50%{box-shadow:0 0 0 8px rgba(43,108,255,.35)}}' +
-    /* dock */
+    '.wr-box{position:fixed;border:2px solid #2b6cff;border-radius:6px;background:rgba(43,108,255,.06);pointer-events:none;z-index:1}' +
+    '.wr-box--done{border-color:#48b98a;background:rgba(72,185,138,.06)}' +
+    '.wr-hl{position:fixed;background:rgba(255,205,60,.4);border-radius:2px;pointer-events:none;z-index:1}' +
+    '.wr-hl--done{background:rgba(72,185,138,.28)}' +
+    '.wr-draw{position:fixed;overflow:visible;pointer-events:none;z-index:1}' +
+    '.wr-draw polyline{fill:none;stroke:#2b6cff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}' +
+    '.wr-draw--done polyline{stroke:#48b98a}' +
+    /* dock + tool tray */
     '.wr-dock{position:fixed;bottom:16px;left:16px;z-index:2147483002;pointer-events:auto;display:flex;gap:8px;align-items:center}' +
     '.wr-btn{pointer-events:auto;border:0;border-radius:999px;padding:10px 14px;font:600 13px/1 inherit;cursor:pointer;' +
       'background:#12151c;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.25);display:inline-flex;gap:7px;align-items:center}' +
     '.wr-btn--go{background:#2b6cff}.wr-btn--ghost{background:#fff;color:#12151c;border:1px solid #e2e5ea}' +
     '.wr-badge{background:rgba(255,255,255,.22);border-radius:999px;padding:1px 7px;font-size:11px}' +
+    '.wr-tray{position:fixed;bottom:62px;left:16px;z-index:2147483003;pointer-events:auto;background:#12151c;border-radius:14px;padding:6px;display:flex;gap:3px;box-shadow:0 10px 30px rgba(0,0,0,.35)}' +
+    '.wr-tool{border:0;background:transparent;color:#fff;border-radius:10px;padding:9px 11px;font:600 11px/1.3 inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:56px}' +
+    '.wr-tool span{font-size:17px}.wr-tool:hover{background:rgba(255,255,255,.13)}.wr-tool--on{background:#2b6cff}' +
     '.wr-dot{position:fixed;bottom:16px;left:16px;z-index:2147483003;pointer-events:auto;width:44px;height:44px;border:0;border-radius:50%;' +
       'background:#2b6cff;color:#fff;font-size:18px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center}' +
     /* sidebar */
     '.wr-side{position:fixed;top:0;right:0;height:100vh;width:344px;max-width:92vw;z-index:2147483002;pointer-events:auto;' +
-      'background:#fff;border-left:1px solid #e6e9ef;box-shadow:-12px 0 40px rgba(0,0,0,.12);display:flex;flex-direction:column;' +
-      'transform:translateX(0);transition:transform .18s ease}' +
+      'background:#fff;border-left:1px solid #e6e9ef;box-shadow:-12px 0 40px rgba(0,0,0,.12);display:flex;flex-direction:column}' +
     '.wr-side-head{display:flex;align-items:center;gap:8px;padding:13px 14px;border-bottom:1px solid #eef1f5}' +
     '.wr-side-title{font-weight:700;font-size:15px}.wr-side-head .wr-sp{margin-left:auto}' +
-    '.wr-chip{border:1px solid #d7dbe2;background:#fff;border-radius:999px;padding:4px 10px;font:600 12px/1 inherit;color:#3a4152;cursor:pointer;display:inline-flex;gap:5px;align-items:center}' +
+    '.wr-chip{border:1px solid #d7dbe2;background:#fff;border-radius:999px;padding:4px 10px;font:600 12px/1 inherit;color:#3a4152;cursor:pointer}' +
     '.wr-chip--on{background:#eef3ff;border-color:#b9ccff;color:#2b6cff}' +
     '.wr-side-body{flex:1;overflow:auto;padding:8px}' +
     '.wr-group{margin:12px 6px 6px;font:700 11px/1 inherit;color:#8a93a3;text-transform:uppercase;letter-spacing:.05em}' +
     '.wr-group:first-child{margin-top:4px}' +
     '.wr-empty{padding:26px 14px;color:#8a93a3;text-align:center;line-height:1.5}' +
-    /* card */
     '.wr-c{border:1px solid #ebeef3;border-radius:12px;margin-bottom:8px;overflow:hidden;background:#fff}' +
-    '.wr-c--sel{border-color:#b9ccff;box-shadow:0 0 0 3px rgba(43,108,255,.12)}' +
-    '.wr-c--done{opacity:.72}' +
-    '.wr-c-head{display:flex;gap:9px;padding:10px;cursor:pointer;align-items:flex-start}' +
-    '.wr-c-head:hover{background:#f7f9fc}' +
+    '.wr-c--sel{border-color:#b9ccff;box-shadow:0 0 0 3px rgba(43,108,255,.12)}.wr-c--done{opacity:.72}' +
+    '.wr-c-head{display:flex;gap:9px;padding:10px;cursor:pointer;align-items:flex-start}.wr-c-head:hover{background:#f7f9fc}' +
     '.wr-num{flex:0 0 22px;height:22px;border-radius:50%;background:#2b6cff;color:#fff;font:600 11px/22px inherit;text-align:center}' +
     '.wr-c--done .wr-num{background:#48b98a}' +
     '.wr-c-main{min-width:0;flex:1}' +
@@ -128,171 +132,202 @@
     '.wr-thread{border-top:1px solid #eef1f5;margin-top:2px;padding-top:8px;display:flex;flex-direction:column;gap:8px}' +
     '.wr-reply{background:#f7f9fc;border-radius:9px;padding:7px 9px}' +
     '.wr-reply .wr-rauthor{font-weight:600;font-size:12px}.wr-reply .wr-rbody{font-size:13px;line-height:1.45;white-space:pre-wrap}' +
-    '.wr-reply .wr-rmeta{font-size:10px;color:#a2abbb;margin-top:2px}' +
     '.wr-replyrow{display:flex;gap:6px;margin-top:2px}' +
     '.wr-replyrow input{flex:1;border:1px solid #d7dbe2;border-radius:9px;padding:8px;font:inherit;color:inherit}' +
     '.wr-c-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}' +
     '.wr-mini{border:1px solid #d7dbe2;background:#fff;border-radius:8px;padding:6px 10px;font:600 12px/1 inherit;cursor:pointer;color:#3a4152}' +
     '.wr-mini--go{background:#2b6cff;color:#fff;border-color:#2b6cff}.wr-mini--danger{color:#c0392b}' +
     '.wr-edit textarea{width:100%;min-height:64px;resize:vertical;border:1px solid #d7dbe2;border-radius:9px;padding:8px;font:inherit;color:inherit}' +
-    /* composer + name popovers */
-    '.wr-pop{position:fixed;z-index:2147483003;width:min(300px,86vw);background:#fff;border:1px solid #e2e5ea;border-radius:14px;' +
-      'box-shadow:0 12px 40px rgba(0,0,0,.24);padding:12px}' +
+    /* popovers */
+    '.wr-pop{position:fixed;z-index:2147483003;width:min(300px,86vw);background:#fff;border:1px solid #e2e5ea;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.24);padding:12px}' +
     '.wr-pop textarea{width:100%;min-height:74px;resize:vertical;border:1px solid #d7dbe2;border-radius:10px;padding:9px;font:inherit;color:inherit}' +
     '.wr-pop input{width:100%;border:1px solid #d7dbe2;border-radius:10px;padding:9px;font:inherit;color:inherit}' +
     '.wr-row{display:flex;gap:8px;justify-content:flex-end;margin-top:9px;align-items:center}' +
     '.wr-row .wr-sp{margin-right:auto;color:#8a93a3;font-size:12px}' +
     '.wr-x{background:none;border:0;font-size:16px;cursor:pointer;color:#8a93a3;padding:2px 6px}' +
-    '.wr-hint{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:2147483003;background:#12151c;color:#fff;' +
-      'padding:8px 14px;border-radius:999px;font-size:13px;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.3);max-width:92vw;text-align:center}' +
+    '.wr-hint{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:2147483003;background:#12151c;color:#fff;padding:8px 14px;border-radius:999px;font-size:13px;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.3);max-width:92vw;text-align:center}' +
     '@media (max-width:600px){.wr-side{width:100vw;max-width:100vw;height:74vh;top:auto;bottom:0;border-left:0;border-top:1px solid #e6e9ef;border-radius:16px 16px 0 0}}' +
     '</style>' +
     '<div class="wr"><div class="wr-overlay" id="ov"></div><div class="wr-dock" id="dock"></div></div>';
   var wrap = root.querySelector(".wr");
   var overlay = root.getElementById("ov");
   var dock = root.getElementById("dock");
+  var SVGNS = "http://www.w3.org/2000/svg";
 
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+  function svg(tag) { return document.createElementNS(SVGNS, tag); }
   function isMine(n) { return n.author_id && n.author_id === AID; }
   function isDone(n) { return n.status === "resolved" || n.status === "wont_fix"; }
   function openCount() { return notes.filter(function (n) { return renderable(n) && !isDone(n); }).length; }
+  function round(n) { return Math.round(n * 10000) / 10000; }
+  function esc(id) { return window.CSS && CSS.escape ? CSS.escape(id) : id; }
 
-  /* ---------------- dock (launcher) ---------------- */
+  /* ---------------- dock + tool tray ---------------- */
   var addBtn = el("button", "wr-btn wr-btn--go");
   var listBtn = el("button", "wr-btn wr-btn--ghost");
   var hideBtn = el("button", "wr-btn wr-btn--ghost");
   dock.appendChild(addBtn); dock.appendChild(listBtn); dock.appendChild(hideBtn);
-  var dot = null;
+  var dot = null, tray = null;
   function renderDock() {
-    addBtn.innerHTML = armed ? "✕ Cancel" : '<span>📍</span> Add note';
+    addBtn.innerHTML = armed ? "✕ Cancel" : '<span>✒️</span> Annotate';
     listBtn.innerHTML = 'Notes <span class="wr-badge">' + openCount() + "</span>";
     hideBtn.textContent = "👁 Hide";
   }
-  addBtn.addEventListener("click", function () { armed ? disarm() : arm(); });
+  addBtn.addEventListener("click", function () { armed ? disarm() : toggleTray(); });
   listBtn.addEventListener("click", function () { sidebarOpen ? closeSidebar() : openSidebar(); });
   hideBtn.addEventListener("click", collapse);
 
+  function toggleTray() { tray ? closeTray() : openTray(); }
+  function openTray() {
+    closeTray();
+    tray = el("div", "wr-tray");
+    Object.keys(TOOLS).forEach(function (k) {
+      var parts = TOOLS[k].split(" ");
+      var b = el("button", "wr-tool" + (tool === k ? " wr-tool--on" : ""));
+      b.appendChild(el("span", null, parts[0])); b.appendChild(el("div", null, parts[1]));
+      b.addEventListener("click", function () { closeTray(); arm(k); });
+      tray.appendChild(b);
+    });
+    wrap.appendChild(tray);
+  }
+  function closeTray() { if (tray) { tray.remove(); tray = null; } }
+
   function collapse() {
-    collapsed = true; wrap.classList.add("wr--collapsed");
+    collapsed = true; wrap.classList.add("wr--collapsed"); closeTray();
     if (!dot) { dot = el("button", "wr-dot", "◐"); dot.title = "Show review tools"; dot.addEventListener("click", expand); wrap.appendChild(dot); }
     dot.style.display = "flex";
   }
   function expand() { collapsed = false; wrap.classList.remove("wr--collapsed"); if (dot) dot.style.display = "none"; }
 
-  /* ---------------- pin tool: arm / capture click ---------------- */
-  var captureLayer = null, hintEl = null;
-  function arm() {
-    if (armed) return; armed = true; renderDock();
-    if (sidebarOpen) closeSidebar();
-    captureLayer = el("div", "wr-capture");
-    captureLayer.addEventListener("click", onCaptureClick, true);
-    wrap.appendChild(captureLayer);
-    hintEl = el("div", "wr-hint", "Click the spot you want to comment on  ·  Esc to cancel");
-    wrap.appendChild(hintEl);
+  /* ---------------- capture (per tool) ---------------- */
+  var captureLayer = null, hintEl = null, live = null, textMode = false;
+  var HINTS = { pin: "Click the spot you want to comment on", box: "Drag a box around the area", text: "Select the text you want to comment on", draw: "Draw on the page to point something out" };
+  function hint(t) { var h = el("div", "wr-hint", t + "  ·  Esc to cancel"); wrap.appendChild(h); return h; }
+  function arm(kind) {
+    disarm(); tool = kind || "pin"; armed = true; renderDock(); if (sidebarOpen) closeSidebar();
+    hintEl = hint(HINTS[tool] || HINTS.pin);
     document.addEventListener("keydown", onEsc, true);
+    if (tool === "text") { textMode = true; document.addEventListener("mouseup", onTextSelect, true); return; }
+    captureLayer = el("div", "wr-capture"); wrap.appendChild(captureLayer);
+    if (tool === "pin") captureLayer.addEventListener("click", onCaptureClick, true);
+    else if (tool === "box") armBox();
+    else if (tool === "draw") armDraw();
   }
   function disarm() {
     armed = false; renderDock();
     if (captureLayer) { captureLayer.remove(); captureLayer = null; }
     if (hintEl) { hintEl.remove(); hintEl = null; }
+    if (live) { live.remove(); live = null; }
+    if (textMode) { document.removeEventListener("mouseup", onTextSelect, true); textMode = false; }
     document.removeEventListener("keydown", onEsc, true);
   }
-  function onEsc(e) { if (e.key === "Escape") { disarm(); } }
-  function onCaptureClick(e) {
-    e.preventDefault(); e.stopPropagation();
-    var x = e.clientX, y = e.clientY;
-    captureLayer.style.pointerEvents = "none";
-    var ovDisp = overlay.style.display; overlay.style.display = "none";
-    var target = document.elementFromPoint(x, y) || document.body;
-    overlay.style.display = ovDisp; captureLayer.style.pointerEvents = "";
-    var a = resolveAnchor(x, y, target);
-    disarm();
-    ensureName(function () { openComposer(x, y, a); });
+  function onEsc(e) { if (e.key === "Escape") disarm(); }
+  function probe(x, y) {   // elementFromPoint with our overlays hidden
+    captureLayer && (captureLayer.style.pointerEvents = "none");
+    var od = overlay.style.display; overlay.style.display = "none";
+    var t = document.elementFromPoint(x, y) || document.body;
+    overlay.style.display = od; captureLayer && (captureLayer.style.pointerEvents = "");
+    return t;
+  }
+  function sectionOf(elm) {
+    var a = elm;
+    while (a && a !== document.body && (!a.id || a.id === "wr-root")) a = a.parentElement;
+    if (!a || !a.id) a = document.body;
+    return a;
   }
 
-  /* ---------------- anchoring (nearest id + verified 2-hop + text) --- */
-  function esc(id) { return window.CSS && CSS.escape ? CSS.escape(id) : id; }
+  function onCaptureClick(e) {
+    e.preventDefault(); e.stopPropagation();
+    var a = resolveAnchor(e.clientX, e.clientY, probe(e.clientX, e.clientY));
+    disarm(); ensureName(function () { openComposer(e.clientX, e.clientY, a, "pin"); });
+  }
+  function armBox() {
+    var start = null;
+    captureLayer.addEventListener("mousedown", function (e) { e.preventDefault(); start = { x: e.clientX, y: e.clientY }; live = el("div", "wr-rubber"); wrap.appendChild(live); setRect(live, e.clientX, e.clientY, e.clientX, e.clientY); });
+    captureLayer.addEventListener("mousemove", function (e) { if (start && live) setRect(live, start.x, start.y, e.clientX, e.clientY); });
+    captureLayer.addEventListener("mouseup", function (e) {
+      if (!start) return; var s = start; start = null; if (live) { live.remove(); live = null; }
+      var x = Math.min(s.x, e.clientX), y = Math.min(s.y, e.clientY), w = Math.abs(e.clientX - s.x), h = Math.abs(e.clientY - s.y);
+      if (w < 6 || h < 6) { disarm(); return; }
+      var a = regionAnchor(x, y, w, h); disarm(); ensureName(function () { openComposer(x, y, a, "box"); });
+    });
+  }
+  function armDraw() {
+    var drawing = false, pts = [], poly = null;
+    captureLayer.addEventListener("pointerdown", function (e) {
+      e.preventDefault(); drawing = true; pts = [[e.clientX, e.clientY]];
+      live = svg("svg"); live.setAttribute("class", "wr-draw"); live.style.cssText = "position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:2147483001";
+      poly = svg("polyline"); poly.setAttribute("points", e.clientX + "," + e.clientY); live.appendChild(poly); wrap.appendChild(live);
+    });
+    captureLayer.addEventListener("pointermove", function (e) { if (!drawing) return; pts.push([e.clientX, e.clientY]); poly.setAttribute("points", pts.map(function (p) { return p[0] + "," + p[1]; }).join(" ")); });
+    captureLayer.addEventListener("pointerup", function () {
+      if (!drawing) return; drawing = false; if (live) { live.remove(); live = null; }
+      if (pts.length < 2) { disarm(); return; }
+      var a = drawAnchor(pts); disarm(); ensureName(function () { openComposer(a._x, a._y, a, "draw"); });
+    });
+  }
+  function setRect(node, x1, y1, x2, y2) { node.style.left = Math.min(x1, x2) + "px"; node.style.top = Math.min(y1, y2) + "px"; node.style.width = Math.abs(x2 - x1) + "px"; node.style.height = Math.abs(y2 - y1) + "px"; }
+
+  /* ---------------- anchor resolvers (all return a uniform shape) ----- */
   function grabText(elm) {
     if (!elm || elm === document.body) return null;
-    var t = (elm.innerText || elm.value || elm.placeholder || elm.alt ||
-             (elm.getAttribute && elm.getAttribute("aria-label")) || "").trim().replace(/\s+/g, " ");
+    var t = (elm.innerText || elm.value || elm.placeholder || elm.alt || (elm.getAttribute && elm.getAttribute("aria-label")) || "").trim().replace(/\s+/g, " ");
     if (!t || t.length > 160) return null;
     return t.slice(0, 120);
   }
+  function selOf(a) { return a.id ? "#" + esc(a.id) : "body"; }
   function resolveAnchor(clientX, clientY, targetEl) {
-    var clicked = targetEl;
-    if (clicked === host || (clicked && clicked.id === "wr-root")) clicked = document.body;
-    var a = clicked;
-    while (a && a !== document.body && (!a.id || a.id === "wr-root")) a = a.parentElement;
-    if (!a || !a.id) a = document.body;
-    var baseSel = a.id ? "#" + esc(a.id) : "body";
-    var selector = baseSel, geoEl = a;
+    var clicked = (targetEl === host || (targetEl && targetEl.id === "wr-root")) ? document.body : targetEl;
+    var a = sectionOf(clicked);
+    var baseSel = selOf(a), selector = baseSel, geoEl = a;
     if (clicked && clicked !== a && clicked.tagName) {
-      var hop = clicked.tagName.toLowerCase() +
-        (clicked.classList && clicked.classList.length ? "." + Array.prototype.join.call(clicked.classList, ".") : "");
-      var twoHop = baseSel + " " + hop;
-      try { if (document.querySelector(twoHop) === clicked) { selector = twoHop; geoEl = clicked; } } catch (e) {}
+      var hop = clicked.tagName.toLowerCase() + (clicked.classList && clicked.classList.length ? "." + Array.prototype.join.call(clicked.classList, ".") : "");
+      try { if (document.querySelector(baseSel + " " + hop) === clicked) { selector = baseSel + " " + hop; geoEl = clicked; } } catch (e) {}
     }
-    var rect = geoEl.getBoundingClientRect();
-    var fx = rect.width ? (clientX - rect.left) / rect.width : 0.5;
-    var fy = rect.height ? (clientY - rect.top) / rect.height : 0.5;
-    var text = grabText(clicked);
+    var r = geoEl.getBoundingClientRect();
     var h = a.querySelector ? a.querySelector("h1,h2,h3,h4") : null;
-    var desc = (clicked && clicked.tagName ? clicked.tagName.toLowerCase() : "el") + (a.id ? " in #" + a.id : "") +
-      (h && h.textContent ? ' — "' + h.textContent.trim().slice(0, 40) + '"' : "");
-    return { section_id: a.id || null, selector: selector, fx: fx, fy: fy, target_text: text, desc: desc };
+    return {
+      section_id: a.id || null, selector: selector, target_text: grabText(clicked),
+      geometry: { x: r.width ? round((clientX - r.left) / r.width) : 0.5, y: r.height ? round((clientY - r.top) / r.height) : 0.5 },
+      desc: (clicked && clicked.tagName ? clicked.tagName.toLowerCase() : "el") + (a.id ? " in #" + a.id : "") + (h && h.textContent ? ' — "' + h.textContent.trim().slice(0, 40) + '"' : "")
+    };
   }
-  function anchorEl(note) {
-    var a = null;
-    try { a = note.target_selector && document.querySelector(note.target_selector); } catch (e) {}
-    if (!a && note.section_id) a = document.getElementById(note.section_id);
-    return a || null;
+  function regionAnchor(x, y, w, h) {
+    var elm = probe(x + w / 2, y + h / 2), a = sectionOf(elm), r = a.getBoundingClientRect();
+    var rw = r.width || 1, rh = r.height || 1;
+    return {
+      section_id: a.id || null, selector: selOf(a), target_text: grabText(elm),
+      geometry: { x: round((x - r.left) / rw), y: round((y - r.top) / rh), w: round(w / rw), h: round(h / rh) },
+      desc: "region in " + (a.id ? "#" + a.id : "page")
+    };
   }
-  function placeMarker(m) {
-    var a = anchorEl(m.note);
-    if (!a) { m.el.style.display = "none"; return; }
-    m.el.style.display = "";
-    var r = a.getBoundingClientRect();
-    var g = m.note.geometry || {};
-    m.el.style.left = (r.left + (g.x != null ? g.x : 0.5) * r.width) + "px";
-    m.el.style.top = (r.top + (g.y != null ? g.y : 0.5) * r.height) + "px";
+  function drawAnchor(pts) {
+    var xs = pts.map(function (p) { return p[0]; }), ys = pts.map(function (p) { return p[1]; });
+    var minX = Math.min.apply(null, xs), minY = Math.min.apply(null, ys), maxX = Math.max.apply(null, xs), maxY = Math.max.apply(null, ys);
+    var elm = probe((minX + maxX) / 2, (minY + maxY) / 2), a = sectionOf(elm), r = a.getBoundingClientRect();
+    var rw = r.width || 1, rh = r.height || 1;
+    var norm = pts.map(function (p) { return [round((p[0] - r.left) / rw), round((p[1] - r.top) / rh)]; });
+    return {
+      section_id: a.id || null, selector: selOf(a), target_text: null,
+      geometry: { paths: norm }, desc: "drawing in " + (a.id ? "#" + a.id : "page"), _x: minX, _y: minY
+    };
   }
-  function placeAll() { markers.forEach(placeMarker); }
-  window.addEventListener("scroll", placeAll, { passive: true });
-  window.addEventListener("resize", function () { var was = CUR; CUR = curLayout(); if (was !== CUR) renderAll(); placeAll(); });
-  window.addEventListener("hashchange", function () { PAGE = pageKey(); renderAll(); });
-
-  /* ---------------- markers ---------------- */
-  function numberOf(note) {
-    var sorted = notes.slice().sort(byCreated);
-    return sorted.findIndex(function (n) { return n.id === note.id; }) + 1;
-  }
-  function byCreated(a, b) { return (a.created_at || "") < (b.created_at || "") ? -1 : 1; }
-  function addMarker(note) {
-    var m = markers.get(note.id);
-    if (m) {
-      m.note = note; m.el.firstChild.textContent = numberOf(note);
-      m.el.className = "wr-pin" + (isDone(note) ? " wr-pin--done" : "") + (expandedId === note.id ? " wr-pin--sel" : "");
-      m.el.title = (note.author || "?") + ": " + (note.body || "");
-      placeMarker(m); return;
-    }
-    var b = el("button", "wr-pin" + (isDone(note) ? " wr-pin--done" : ""));
-    b.appendChild(el("span", null, numberOf(note)));
-    b.title = (note.author || "?") + ": " + (note.body || "");
-    b.addEventListener("click", function (e) {
-      e.stopPropagation();
-      var cur = markers.get(note.id);
-      openInSidebar(cur ? cur.note : note);
-    });
-    overlay.appendChild(b);
-    m = { el: b, note: note }; markers.set(note.id, m); placeMarker(m);
-  }
-  function removeMarker(id) { var m = markers.get(id); if (m) { m.el.remove(); markers.delete(id); } }
-  function renderAll() {
-    var seen = {};
-    notes.forEach(function (n) { if (renderable(n)) { seen[n.id] = 1; addMarker(n); } });
-    markers.forEach(function (_, id) { if (!seen[id]) removeMarker(id); });
-    renderDock(); if (sidebarOpen) renderSidebar();
+  function onTextSelect(e) {
+    try {
+      var sel = window.getSelection(); if (!sel || sel.isCollapsed) return;
+      var quote = sel.toString().trim(); if (quote.length < 2) return;
+      var range = sel.getRangeAt(0), rect = range.getBoundingClientRect();
+      var common = range.commonAncestorContainer; if (common.nodeType === 3) common = common.parentElement;
+      if (host.contains(common)) return;   // ignore selections inside our own UI
+      var a = sectionOf(common), r = a.getBoundingClientRect(), rw = r.width || 1, rh = r.height || 1;
+      var anchor = {
+        section_id: a.id || null, selector: selOf(a), target_text: quote.slice(0, 300),
+        geometry: { x: round((rect.left - r.left) / rw), y: round((rect.top - r.top) / rh), w: round(rect.width / rw), h: round(rect.height / rh) },
+        desc: "text in " + (a.id ? "#" + a.id : "page")
+      };
+      var x = rect.left, y = rect.bottom; sel.removeAllRanges(); disarm();
+      ensureName(function () { openComposer(x, y, anchor, "text"); });
+    } catch (err) { disarm(); }
   }
 
   /* ---------------- name gate ---------------- */
@@ -308,7 +343,7 @@
     inp.addEventListener("keydown", function (e) { if (e.key === "Enter") done(); });
   }
 
-  /* ---------------- composer (new note) ---------------- */
+  /* ---------------- composer ---------------- */
   var openPop = null;
   function closePop() { if (openPop) { openPop.remove(); openPop = null; } }
   function positionPop(pop, x, y) {
@@ -317,66 +352,148 @@
     pop.style.left = Math.min(Math.max(pad, x + 14), innerWidth - w - pad) + "px";
     pop.style.top = Math.min(Math.max(pad, y + 14), innerHeight - h - pad) + "px";
   }
-  function openComposer(x, y, a) {
+  function openComposer(x, y, a, kind) {
     closePop();
     var pop = el("div", "wr-pop");
     var head = el("div", "wr-row");
-    head.appendChild(el("div", "wr-sp", "New note · " + (a.section_id ? "#" + a.section_id : "page") + " · " + CUR));
+    head.appendChild(el("div", "wr-sp", "New " + (TOOLS[kind] ? TOOLS[kind].split(" ")[1].toLowerCase() : "note") + " · " + (a.section_id ? "#" + a.section_id : "page") + " · " + CUR));
     var xb = el("button", "wr-x", "✕"); head.appendChild(xb); pop.appendChild(head);
+    if (a.target_text) { var q = el("div", "wr-anchor"); q.setAttribute("dir", "auto"); q.textContent = "“" + a.target_text + "”"; pop.appendChild(q); }
     var ta = el("textarea"); ta.placeholder = "What should change here?"; ta.setAttribute("dir", "auto"); pop.appendChild(ta);
-    var row = el("div", "wr-row"); var save = el("button", "wr-btn wr-btn--go", "Save note"); row.appendChild(save); pop.appendChild(row);
+    var row = el("div", "wr-row"); var save = el("button", "wr-btn wr-btn--go", "Save"); row.appendChild(save); pop.appendChild(row);
     openPop = pop; positionPop(pop, x, y); ta.focus();
     xb.addEventListener("click", closePop);
     function submit() {
       var body = ta.value.trim(); if (!body) return ta.focus();
       closePop();
-      saveNote({
-        kind: "pin", section_id: a.section_id, target_selector: a.selector, target_text: a.target_text, elem_desc: a.desc,
-        geometry: { x: round(a.fx), y: round(a.fy) }, viewport_w: innerWidth, viewport_h: innerHeight, body: body
-      });
+      saveNote({ kind: kind, section_id: a.section_id, target_selector: a.selector, target_text: a.target_text, elem_desc: a.desc, geometry: a.geometry, viewport_w: innerWidth, viewport_h: innerHeight, body: body });
       openSidebar();
     }
     save.addEventListener("click", submit);
     ta.addEventListener("keydown", function (e) { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") submit(); });
   }
-  function round(n) { return Math.round(n * 10000) / 10000; }
 
-  /* ---------------- sidebar (frame.io-style note list) ---------------- */
+  /* ---------------- markers + shapes ---------------- */
+  function byCreated(a, b) { return (a.created_at || "") < (b.created_at || "") ? -1 : 1; }
+  function numberOf(note) { return notes.slice().sort(byCreated).findIndex(function (n) { return n.id === note.id; }) + 1; }
+  function anchorEl(note) {
+    var a = null;
+    try { a = note.target_selector && document.querySelector(note.target_selector); } catch (e) {}
+    if (!a && note.section_id) a = document.getElementById(note.section_id);
+    return a || null;
+  }
+  function addMarker(note) {
+    var m = markers.get(note.id);
+    if (m) { m.note = note; m.el.firstChild.textContent = numberOf(note); m.el.className = "wr-pin" + (isDone(note) ? " wr-pin--done" : ""); m.el.title = (note.author || "?") + ": " + (note.body || ""); placeMarker(m); return; }
+    var b = el("button", "wr-pin" + (isDone(note) ? " wr-pin--done" : ""));
+    b.appendChild(el("span", null, numberOf(note)));
+    b.title = (note.author || "?") + ": " + (note.body || "");
+    b.addEventListener("click", function (e) { e.stopPropagation(); var cur = markers.get(note.id); openInSidebar(cur ? cur.note : note); });
+    overlay.appendChild(b);
+    var shape = null;
+    if (note.kind === "box") { shape = el("div", "wr-box"); }
+    else if (note.kind === "text") { shape = el("div"); shape.style.cssText = "position:fixed;left:0;top:0;pointer-events:none;z-index:1"; }
+    else if (note.kind === "draw") { shape = svg("svg"); shape.setAttribute("class", "wr-draw"); shape.appendChild(svg("polyline")); }
+    if (shape) overlay.appendChild(shape);
+    m = { el: b, shape: shape, note: note }; markers.set(note.id, m); placeMarker(m);
+  }
+  function removeMarker(id) { var m = markers.get(id); if (m) { m.el.remove(); if (m.shape) m.shape.remove(); markers.delete(id); } }
+  function placeMarker(m) {
+    var note = m.note, a = anchorEl(note);
+    if (!a) { m.el.style.display = "none"; if (m.shape) m.shape.style.display = "none"; return; }
+    m.el.style.display = ""; if (m.shape) m.shape.style.display = "";
+    var r = a.getBoundingClientRect(), g = note.geometry || {}, done = isDone(note);
+    try {
+      if (note.kind === "box") {
+        var bx = r.left + (g.x || 0) * r.width, by = r.top + (g.y || 0) * r.height, bw = (g.w || 0) * r.width, bh = (g.h || 0) * r.height;
+        m.shape.className = "wr-box" + (done ? " wr-box--done" : "");
+        m.shape.style.left = bx + "px"; m.shape.style.top = by + "px"; m.shape.style.width = bw + "px"; m.shape.style.height = bh + "px";
+        m.el.style.left = bx + "px"; m.el.style.top = by + "px";
+      } else if (note.kind === "text") {
+        var rng = note.target_text ? findRange(a, note.target_text) : null;
+        m.shape.innerHTML = "";
+        if (rng) {
+          var rects = rng.getClientRects(), first = null;
+          for (var i = 0; i < rects.length; i++) { var rc = rects[i]; if (!first) first = rc; var hl = el("div", "wr-hl" + (done ? " wr-hl--done" : "")); hl.style.left = rc.left + "px"; hl.style.top = rc.top + "px"; hl.style.width = rc.width + "px"; hl.style.height = rc.height + "px"; m.shape.appendChild(hl); }
+          if (first) { m.el.style.left = first.left + "px"; m.el.style.top = first.top + "px"; }
+          else placePoint(m, r, g);
+        } else placePoint(m, r, g);   // quote not found on this layout — fall back to a corner pin
+      } else if (note.kind === "draw") {
+        var paths = g.paths || [], pts = paths.map(function (p) { return (r.left + p[0] * r.width) + "," + (r.top + p[1] * r.height); }).join(" ");
+        m.shape.setAttribute("class", "wr-draw" + (done ? " wr-draw--done" : ""));
+        m.shape.style.cssText = "position:fixed;left:0;top:0;width:100vw;height:100vh;overflow:visible;pointer-events:none;z-index:1";
+        m.shape.firstChild.setAttribute("points", pts);
+        var bx0 = paths.length ? r.left + Math.min.apply(null, paths.map(function (p) { return p[0]; })) * r.width : r.left;
+        var by0 = paths.length ? r.top + Math.min.apply(null, paths.map(function (p) { return p[1]; })) * r.height : r.top;
+        m.el.style.left = bx0 + "px"; m.el.style.top = by0 + "px";
+      } else { placePoint(m, r, g); }
+    } catch (e) { placePoint(m, r, g); }
+  }
+  function placePoint(m, r, g) { m.el.style.left = (r.left + (g.x != null ? g.x : 0.5) * r.width) + "px"; m.el.style.top = (r.top + (g.y != null ? g.y : 0.5) * r.height) + "px"; }
+  function placeAll() { markers.forEach(placeMarker); }
+  window.addEventListener("scroll", placeAll, { passive: true });
+  window.addEventListener("resize", function () { var was = CUR; CUR = curLayout(); if (was !== CUR) renderAll(); placeAll(); });
+  window.addEventListener("hashchange", function () { PAGE = pageKey(); renderAll(); });
+
+  // find a verbatim quote inside an element, return a Range (whitespace-flexible)
+  function findRange(rootEl, quote) {
+    try {
+      var q = String(quote || "").trim(); if (q.length < 2) return null;
+      var walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT, null), nodes = [], text = "", n;
+      while ((n = walker.nextNode())) { nodes.push({ node: n, start: text.length }); text += n.nodeValue; }
+      var pat = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+      var mm = new RegExp(pat).exec(text); if (!mm) return null;
+      var s = mm.index, e = s + mm[0].length, range = document.createRange(), setS = false;
+      for (var i = 0; i < nodes.length; i++) { var nd = nodes[i], len = nd.node.nodeValue.length, ns = nd.start, ne = ns + len;
+        if (!setS && s >= ns && s <= ne) { range.setStart(nd.node, s - ns); setS = true; }
+        if (e >= ns && e <= ne) { range.setEnd(nd.node, e - ns); return range; } }
+      return null;
+    } catch (err) { return null; }
+  }
+
+  function renderAll() {
+    var seen = {};
+    notes.forEach(function (n) { if (renderable(n)) { seen[n.id] = 1; addMarker(n); } });
+    markers.forEach(function (_, id) { if (!seen[id]) removeMarker(id); });
+    renderDock(); if (sidebarOpen) renderSidebar();
+  }
+
+  /* ---------------- sidebar ---------------- */
   var side = null;
   function openSidebar() { sidebarOpen = true; if (collapsed) expand(); renderSidebar(); }
   function closeSidebar() { sidebarOpen = false; if (side) { side.remove(); side = null; } renderDock(); }
   function openInSidebar(note) { openSidebar(); expandedId = note.id; renderSidebar(); renderAll(); scrollCardIntoView(note.id); pulse(note.id); }
   function scrollCardIntoView(id) { setTimeout(function () { var c = side && side.querySelector('[data-card="' + id + '"]'); if (c) c.scrollIntoView({ block: "nearest" }); }, 30); }
+  function kindIcon(n) { return n.kind === "box" ? "▭" : n.kind === "text" ? "🖍" : n.kind === "draw" ? "✎" : "📍"; }
 
   function renderSidebar() {
     if (side) side.remove();
     side = el("div", "wr-side");
     var head = el("div", "wr-side-head");
     head.appendChild(el("div", "wr-side-title", "Review"));
-    var sp = el("div", "wr-sp");
+    head.appendChild(el("div", "wr-sp"));
     var lay = el("button", "wr-chip" + (layoutFilter === "all" ? "" : " wr-chip--on"), (CUR === "mobile" ? "📱 " : "💻 ") + (layoutFilter === "all" ? "All layouts" : CUR));
-    lay.title = "Toggle: this layout only / all layouts";
+    lay.title = "This layout only / all layouts";
     lay.addEventListener("click", function () { layoutFilter = layoutFilter === "all" ? "current" : "all"; renderSidebar(); renderAll(); });
-    head.appendChild(sp); head.appendChild(lay);
+    head.appendChild(lay);
     var cx = el("button", "wr-x", "✕"); cx.addEventListener("click", closeSidebar); head.appendChild(cx);
     side.appendChild(head);
 
     var bodyEl = el("div", "wr-side-body");
     var sorted = notes.slice().sort(byCreated);
-    var here = sorted.filter(function (n) { return onPage(n) && (layoutFilter === "all" || layoutOf(n) === CUR || layoutOf(n) === "unknown"); });
-    var otherLayout = sorted.filter(function (n) { return onPage(n) && !(layoutFilter === "all" || layoutOf(n) === CUR || layoutOf(n) === "unknown"); });
+    var lm = function (n) { return layoutFilter === "all" || layoutOf(n) === CUR || layoutOf(n) === "unknown"; };
+    var here = sorted.filter(function (n) { return onPage(n) && lm(n); });
+    var otherLayout = sorted.filter(function (n) { return onPage(n) && !lm(n); });
     var otherPages = sorted.filter(function (n) { return !onPage(n); });
-
     if (!here.length && !otherLayout.length && !otherPages.length)
-      bodyEl.appendChild(el("div", "wr-empty", "No notes yet.\nHit “📍 Add note”, then click any spot on the page."));
+      bodyEl.appendChild(el("div", "wr-empty", "No notes yet.\nHit “✒️ Annotate”, pick a tool, then mark the page."));
     if (here.length) { bodyEl.appendChild(el("div", "wr-group", "This page · " + CUR)); here.forEach(function (n) { bodyEl.appendChild(card(n)); }); }
-    if (otherLayout.length) { bodyEl.appendChild(el("div", "wr-group", "Other layout (switch device to place/see)")); otherLayout.forEach(function (n) { bodyEl.appendChild(card(n)); }); }
+    if (otherLayout.length) { bodyEl.appendChild(el("div", "wr-group", "Other layout (switch device to see)")); otherLayout.forEach(function (n) { bodyEl.appendChild(card(n)); }); }
     if (otherPages.length) { bodyEl.appendChild(el("div", "wr-group", "Other pages")); otherPages.forEach(function (n) { bodyEl.appendChild(card(n)); }); }
     side.appendChild(bodyEl);
     wrap.appendChild(side);
     renderDock();
   }
-
   function card(n) {
     var open = expandedId === n.id;
     var c = el("div", "wr-c" + (isDone(n) ? " wr-c--done" : "") + (open ? " wr-c--sel" : ""));
@@ -386,137 +503,84 @@
     var main = el("div", "wr-c-main");
     var pv = el("div", "wr-c-preview", n.body || "(no text)"); pv.setAttribute("dir", "auto"); main.appendChild(pv);
     var meta = el("div", "wr-c-meta");
-    meta.appendChild(el("span", null, n.author || "?"));
+    meta.appendChild(el("span", null, kindIcon(n) + " " + (n.author || "?")));
     meta.appendChild(el("span", "wr-tag", layoutOf(n) === "mobile" ? "📱 mobile" : layoutOf(n) === "desktop" ? "💻 desktop" : "· ·"));
     if (isDone(n)) meta.appendChild(el("span", "wr-tag wr-tag--done", n.status));
     var nc = commentsOf(n.id).length; if (nc) meta.appendChild(el("span", "wr-tag", "💬 " + nc));
     if (!onPage(n)) meta.appendChild(el("span", "wr-tag", n.page_url || "/"));
-    main.appendChild(meta);
-    head.appendChild(main);
-    head.addEventListener("click", function () {
-      var opening = !open;
-      expandedId = opening ? n.id : null;
-      renderSidebar(); renderAll();
-      if (opening) jumpTo(n);            // clicking a card jumps the page to its pin + pulses it
-    });
+    main.appendChild(meta); head.appendChild(main);
+    head.addEventListener("click", function () { var opening = !open; expandedId = opening ? n.id : null; renderSidebar(); renderAll(); if (opening) jumpTo(n); });
     c.appendChild(head);
     if (open) c.appendChild(cardBody(n));
     return c;
   }
-
   function cardBody(n) {
     var wrapc = el("div", "wr-c-open");
-    // anchor
     var anc = el("div", "wr-anchor");
-    var sel = el("code", null, n.target_selector || (n.section_id ? "#" + n.section_id : n.page_url || "/")); anc.appendChild(sel);
+    anc.appendChild(el("code", null, n.target_selector || (n.section_id ? "#" + n.section_id : n.page_url || "/")));
     var loc = el("span", "wr-locate", "locate →"); loc.addEventListener("click", function () { jumpTo(n); }); anc.appendChild(loc);
     if (n.target_text) { var qq = el("div", "wr-quote"); qq.setAttribute("dir", "auto"); qq.textContent = "“" + n.target_text + "”"; anc.appendChild(qq); }
     wrapc.appendChild(anc);
-    // body (with inline edit if mine)
-    var bodyBox = el("div");
-    renderBody();
-    function renderBody() {
-      bodyBox.innerHTML = "";
-      var b = el("div", "wr-body", n.body || ""); b.setAttribute("dir", "auto"); bodyBox.appendChild(b);
-    }
+    var bodyBox = el("div"); renderBody();
+    function renderBody() { bodyBox.innerHTML = ""; var b = el("div", "wr-body", n.body || ""); b.setAttribute("dir", "auto"); bodyBox.appendChild(b); }
     wrapc.appendChild(bodyBox);
     if (n.resolution) { var res = el("div", "wr-anchor"); res.textContent = "Resolved: " + n.resolution; wrapc.appendChild(res); }
-    // thread
     var thread = el("div", "wr-thread");
-    commentsOf(n.id).forEach(function (c) {
-      var r = el("div", "wr-reply");
-      r.appendChild(el("div", "wr-rauthor", c.author || "?"));
-      var rb = el("div", "wr-rbody", c.body || ""); rb.setAttribute("dir", "auto"); r.appendChild(rb);
-      thread.appendChild(r);
-    });
-    var rr = el("div", "wr-replyrow");
-    var ri = el("input"); ri.placeholder = "Reply…"; ri.setAttribute("dir", "auto"); rr.appendChild(ri);
-    var rb = el("button", "wr-mini wr-mini--go", "Send"); rr.appendChild(rb);
+    commentsOf(n.id).forEach(function (c) { var r = el("div", "wr-reply"); r.appendChild(el("div", "wr-rauthor", c.author || "?")); var rb = el("div", "wr-rbody", c.body || ""); rb.setAttribute("dir", "auto"); r.appendChild(rb); thread.appendChild(r); });
+    var rr = el("div", "wr-replyrow"); var ri = el("input"); ri.placeholder = "Reply…"; ri.setAttribute("dir", "auto"); rr.appendChild(ri);
+    var sendB = el("button", "wr-mini wr-mini--go", "Send"); rr.appendChild(sendB);
     function sendReply() { var v = ri.value.trim(); if (!v) return; ri.value = ""; ensureName(function () { addComment(n.id, v); }); }
-    rb.addEventListener("click", sendReply);
-    ri.addEventListener("keydown", function (e) { if (e.key === "Enter") sendReply(); });
-    thread.appendChild(rr);
-    wrapc.appendChild(thread);
-    // actions
+    sendB.addEventListener("click", sendReply); ri.addEventListener("keydown", function (e) { if (e.key === "Enter") sendReply(); });
+    thread.appendChild(rr); wrapc.appendChild(thread);
     var acts = el("div", "wr-c-actions");
-    var tog = el("button", "wr-mini", isDone(n) ? "↺ Reopen" : "✓ Resolve");
-    tog.addEventListener("click", function () { setStatus(n, isDone(n) ? "open" : "resolved"); });
-    acts.appendChild(tog);
+    var tog = el("button", "wr-mini", isDone(n) ? "↺ Reopen" : "✓ Resolve"); tog.addEventListener("click", function () { setStatus(n, isDone(n) ? "open" : "resolved"); }); acts.appendChild(tog);
     if (isMine(n)) {
-      var ed = el("button", "wr-mini", "✎ Edit");
-      ed.addEventListener("click", function () { startEdit(); });
-      acts.appendChild(ed);
-      var del = el("button", "wr-mini wr-mini--danger", "🗑 Delete");
-      del.addEventListener("click", function () { if (confirm("Delete your note?")) { deleteNote(n); expandedId = null; renderSidebar(); renderAll(); } });
-      acts.appendChild(del);
+      var edb = el("button", "wr-mini", "✎ Edit"); edb.addEventListener("click", startEdit); acts.appendChild(edb);
+      var del = el("button", "wr-mini wr-mini--danger", "🗑 Delete"); del.addEventListener("click", function () { if (confirm("Delete your note?")) { deleteNote(n); expandedId = null; renderSidebar(); renderAll(); } }); acts.appendChild(del);
     }
     wrapc.appendChild(acts);
-
     function startEdit() {
-      bodyBox.innerHTML = "";
-      var box = el("div", "wr-edit");
-      var ta = el("textarea"); ta.value = n.body || ""; ta.setAttribute("dir", "auto"); box.appendChild(ta);
-      var row = el("div", "wr-c-actions");
-      var save = el("button", "wr-mini wr-mini--go", "Save");
-      var cancel = el("button", "wr-mini", "Cancel");
-      row.appendChild(save); row.appendChild(cancel); box.appendChild(row);
+      bodyBox.innerHTML = ""; var box = el("div", "wr-edit"); var ta = el("textarea"); ta.value = n.body || ""; ta.setAttribute("dir", "auto"); box.appendChild(ta);
+      var row = el("div", "wr-c-actions"); var save = el("button", "wr-mini wr-mini--go", "Save"); var cancel = el("button", "wr-mini", "Cancel"); row.appendChild(save); row.appendChild(cancel); box.appendChild(row);
       bodyBox.appendChild(box); ta.focus();
       save.addEventListener("click", function () { var v = ta.value.trim(); if (!v) return; updateBody(n, v); renderBody(); });
       cancel.addEventListener("click", renderBody);
     }
     return wrapc;
   }
-
-  function pulse(id) {
-    setTimeout(function () { var m = markers.get(id); if (m) { m.el.classList.add("wr-pin--pulse"); setTimeout(function () { m.el.classList.remove("wr-pin--pulse"); }, 1800); } }, 60);
-  }
+  function pulse(id) { setTimeout(function () { var m = markers.get(id); if (m) { m.el.classList.add("wr-pin--pulse"); setTimeout(function () { m.el.classList.remove("wr-pin--pulse"); }, 1800); } }, 60); }
   function jumpTo(note) {
     if (!onPage(note)) { var u = note.page_url || "/"; location.href = u + (u.indexOf("?") >= 0 ? "&" : "?") + "review=1"; return; }
-    var a = anchorEl(note);
-    if (a) a.scrollIntoView({ behavior: "smooth", block: "center" });
+    var a = anchorEl(note); if (a) a.scrollIntoView({ behavior: "smooth", block: "center" });
     pulse(note.id);
   }
 
-  /* ---------------- data ops (Supabase + optimistic cache) -------- */
+  /* ---------------- data ops ---------------- */
   function colsOf(n) {
-    return {
-      id: n.id, project_key: BOARD, kind: n.kind, page_url: n.page_url, page_title: n.page_title,
-      section_id: n.section_id, target_selector: n.target_selector, target_text: n.target_text,
-      elem_desc: n.elem_desc, geometry: n.geometry, viewport_w: n.viewport_w, viewport_h: n.viewport_h,
-      body: n.body, status: n.status, author: n.author, author_id: n.author_id
-    };
+    return { id: n.id, project_key: BOARD, kind: n.kind, page_url: n.page_url, page_title: n.page_title, section_id: n.section_id, target_selector: n.target_selector, target_text: n.target_text, elem_desc: n.elem_desc, geometry: n.geometry, viewport_w: n.viewport_w, viewport_h: n.viewport_h, body: n.body, status: n.status, author: n.author, author_id: n.author_id };
   }
   function saveNote(partial) {
-    var rec = Object.assign({
-      id: uid(), project_key: BOARD, kind: "pin", page_url: PAGE, page_title: document.title,
-      status: "open", author: ME, author_id: AID, created_at: new Date().toISOString(), updated_at: new Date().toISOString()
-    }, partial);
-    rec._pending = true;
-    notes.push(rec); cacheWrite(); renderAll();
-    flushOne(rec);
+    var rec = Object.assign({ id: uid(), project_key: BOARD, kind: "pin", page_url: PAGE, page_title: document.title, status: "open", author: ME, author_id: AID, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }, partial);
+    rec._pending = true; notes.push(rec); cacheWrite(); renderAll(); flushOne(rec);
   }
   function flushOne(rec) {
     if (!supa || !rec._pending) return;
-    supa.from("notes").insert(colsOf(rec)).then(function (res) {
-      if (res.error) { console.warn("[review] insert queued (will retry on next sync):", res.error.message); return; }
-      delete rec._pending; cacheWrite();
-    });
+    supa.from("notes").insert(colsOf(rec)).then(function (res) { if (res.error) { console.warn("[review] insert queued (retry on next sync):", res.error.message); return; } delete rec._pending; cacheWrite(); });
   }
   function flushPending() { notes.slice().forEach(function (n) { if (n._pending) flushOne(n); }); }
   function setStatus(note, status) {
-    var live = notes.filter(function (n) { return n.id === note.id; })[0] || note;
-    live.status = status; live.updated_at = new Date().toISOString(); live.updated_by = ME;
-    if (status !== "resolved" && status !== "wont_fix") live.resolution = null;
+    var live2 = notes.filter(function (n) { return n.id === note.id; })[0] || note;
+    live2.status = status; live2.updated_at = new Date().toISOString(); live2.updated_by = ME;
+    if (status !== "resolved" && status !== "wont_fix") live2.resolution = null;
     cacheWrite(); renderAll();
-    if (live._pending) { flushOne(live); return; }
-    if (supa) supa.from("notes").update({ status: status, updated_by: ME, resolution: live.resolution || null }).eq("id", live.id).then(function (r) { if (r.error) console.warn(r.error.message); });
+    if (live2._pending) { flushOne(live2); return; }
+    if (supa) supa.from("notes").update({ status: status, updated_by: ME, resolution: live2.resolution || null }).eq("id", live2.id).then(function (r) { if (r.error) console.warn(r.error.message); });
   }
   function updateBody(note, body) {
-    var live = notes.filter(function (n) { return n.id === note.id; })[0] || note;
-    live.body = body; live.updated_at = new Date().toISOString(); live.updated_by = ME;
-    cacheWrite(); renderAll();
-    if (live._pending) { flushOne(live); return; }
-    if (supa) supa.from("notes").update({ body: body, updated_by: ME }).eq("id", live.id).then(function (r) { if (r.error) console.warn("[review] edit needs the body grant — run the SQL in README:", r.error.message); });
+    var live2 = notes.filter(function (n) { return n.id === note.id; })[0] || note;
+    live2.body = body; live2.updated_at = new Date().toISOString(); live2.updated_by = ME; cacheWrite(); renderAll();
+    if (live2._pending) { flushOne(live2); return; }
+    if (supa) supa.from("notes").update({ body: body, updated_by: ME }).eq("id", live2.id).then(function (r) { if (r.error) console.warn("[review] edit needs the body grant (see hardening.sql):", r.error.message); });
   }
   function deleteNote(note) {
     var wasPending = false;
@@ -526,10 +590,9 @@
   }
   function commentsOf(id) { return comments.filter(function (c) { return c.note_id === id; }).sort(byCreated); }
   function addComment(noteId, body) {
-    var rec = { id: uid(), note_id: noteId, project_key: BOARD, author: ME, author_id: AID, body: body, created_at: new Date().toISOString() };
-    comments.push(rec); renderSidebar(); renderAll();
-    if (supa) supa.from("comments").insert({ note_id: noteId, project_key: BOARD, author: ME, author_id: AID, body: body })
-      .then(function (r) { if (r.error) console.warn("[review] reply failed:", r.error.message); });
+    comments.push({ id: uid(), note_id: noteId, project_key: BOARD, author: ME, author_id: AID, body: body, created_at: new Date().toISOString() });
+    renderSidebar(); renderAll();
+    if (supa) supa.from("comments").insert({ note_id: noteId, project_key: BOARD, author: ME, author_id: AID, body: body }).then(function (r) { if (r.error) console.warn("[review] reply failed:", r.error.message); });
   }
   function fetchNotes() {
     if (!supa) return;
@@ -537,37 +600,22 @@
       if (res.error) { console.warn("[review] fetch failed:", res.error.message); return; }
       var server = res.data || [];
       var pending = notes.filter(function (n) { return n._pending && !server.some(function (s) { return s.id === n.id; }); });
-      notes = server.concat(pending); cacheWrite(); renderAll();
-      flushPending();
+      notes = server.concat(pending); cacheWrite(); renderAll(); flushPending();
     });
-    supa.from("comments").select("*").eq("project_key", BOARD).order("created_at", { ascending: true }).then(function (res) {
-      if (!res.error) { comments = res.data || []; if (sidebarOpen) renderSidebar(); renderAll(); }
-    });
+    supa.from("comments").select("*").eq("project_key", BOARD).order("created_at", { ascending: true }).then(function (res) { if (!res.error) { comments = res.data || []; if (sidebarOpen) renderSidebar(); renderAll(); } });
   }
 
   /* ---------------- boot ---------------- */
   renderAll();
   loadSupabase(function () {
     supa = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnon, { global: { headers: { "x-board-key": BOARD } } });
-    supa.from("projects").upsert(
-      { project_key: BOARD, name: document.title || BOARD, site_host: BOARD },
-      { onConflict: "project_key" }
-    ).then(function (r) {
-      if (r.error) console.warn("[review] board register:", r.error.message);
-      flushPending();
-      fetchNotes();
-    });
+    supa.from("projects").upsert({ project_key: BOARD, name: document.title || BOARD, site_host: BOARD }, { onConflict: "project_key" }).then(function (r) { if (r.error) console.warn("[review] board register:", r.error.message); flushPending(); fetchNotes(); });
   });
   window.addEventListener("focus", fetchNotes);
   document.addEventListener("visibilitychange", function () { if (!document.hidden) fetchNotes(); });
-
   function loadSupabase(cb) {
     if (window.supabase && window.supabase.createClient) return cb();
-    var s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-    s.onload = cb; s.onerror = function () { console.warn("[review] supabase-js failed to load; running offline (localStorage only)."); };
-    document.head.appendChild(s);
+    var s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"; s.onload = cb; s.onerror = function () { console.warn("[review] supabase-js failed to load; running offline (localStorage only)."); }; document.head.appendChild(s);
   }
-
   window.__wr = { arm: arm, notes: function () { return notes; }, comments: function () { return comments; }, fetch: fetchNotes, board: BOARD, sidebar: openSidebar };
 })();
