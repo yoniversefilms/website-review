@@ -22,3 +22,9 @@ Repo: github.com/yoniversefilms/website-review.
 
 ## State stamping
 `tower/status.json` is machine-written for the session dashboard. Don't edit; don't commit.
+
+## Session handoffs
+On resume: read docs/sessions/latest/HANDOFF.md if it exists (else the newest
+docs/sessions/<date>-*/HANDOFF.md) BEFORE doing anything else, and set
+"handoff_ready": false in tower/status.json once read. At ~80% context, run
+the handoff skill.

@@ -32,6 +32,16 @@
     CFG.projectKey ||
     normHost(location.hostname);
 
+  // OWNER MODE (triage UI: Fix/Park/Resolve). Open once with &owner=1 to mark this
+  // browser as the owner (persists); &owner=0 clears it. Clients never see triage.
+  var OWNER = false;
+  try {
+    var op = params.get("owner");
+    if (op === "1") localStorage.setItem("wr:owner", "1");
+    if (op === "0") localStorage.removeItem("wr:owner");
+    OWNER = localStorage.getItem("wr:owner") === "1";
+  } catch (e) { OWNER = params.get("owner") === "1"; }
+
   if (!CFG.supabaseUrl || !CFG.supabaseAnon) {
     console.warn("[review] WR_CONFIG.supabaseUrl / supabaseAnon missing — widget off.");
     return;
@@ -351,7 +361,7 @@
   }
   var TOUR = [
     { btn: function () { return pinBtn; }, title: "Pin 📍 & Draw ✎", body: "Tap Pin, then tap any spot to leave a note there. Or tap Draw and scribble right on the page. Type what should change and save." },
-    { btn: function () { return listBtn; }, title: "Notes", body: "Every note lands here. Tap one to jump to its exact spot on the page, reply, or mark it resolved." },
+    { btn: function () { return listBtn; }, title: "Notes", body: "Every note lands here. Tap one to jump to its exact spot on the page, reply, or add a photo." },
     { btn: function () { return hideBtn; }, title: "Hide 👁", body: "Hides the review tools so you see the site clean. Tap the blue dot (bottom-left) to bring them back. That's it — happy reviewing!" }
   ];
   var tourRing = null;
@@ -557,13 +567,16 @@
     meta.appendChild(el("span", null, kindIcon(n) + " " + (n.author || "?")));
     meta.appendChild(el("span", "wr-tag", layoutOf(n) === "mobile" ? "📱 mobile" : layoutOf(n) === "desktop" ? "💻 desktop" : "· ·"));
     if (isDone(n)) meta.appendChild(el("span", "wr-tag wr-tag--done", n.status));
-    if (n.disposition === "fix") meta.appendChild(el("span", "wr-tag wr-tag--fix", "🔧 fix"));
-    if (n.disposition === "parked") meta.appendChild(el("span", "wr-tag wr-tag--park", "⏸ parked"));
+    if (OWNER && n.disposition === "fix") meta.appendChild(el("span", "wr-tag wr-tag--fix", "🔧 fix"));
+    if (OWNER && n.disposition === "parked") meta.appendChild(el("span", "wr-tag wr-tag--park", "⏸ parked"));
     var nc = commentsOf(n.id).length; if (nc) meta.appendChild(el("span", "wr-tag", "💬 " + nc));
     var np = attsOf(n.id).length; if (np) meta.appendChild(el("span", "wr-tag", "📷 " + np));
     if (!onPage(n)) meta.appendChild(el("span", "wr-tag", n.page_url || "/"));
     main.appendChild(meta); head.appendChild(main);
-    head.addEventListener("click", function () { var opening = !open; expandedId = opening ? n.id : null; renderSidebar(); renderAll(); if (opening) jumpTo(n); });
+    head.addEventListener("click", function () {
+      var opening = !open; expandedId = opening ? n.id : null; renderSidebar(); renderAll();
+      if (opening && onPage(n)) jumpTo(n);   // scroll to it on THIS page; cross-page travel only via "locate →"
+    });
     c.appendChild(head);
     if (open) c.appendChild(cardBody(n));
     return c;
@@ -589,7 +602,7 @@
       wrapc.appendChild(pg);
     }
     if (n.resolution) { var res = el("div", "wr-anchor"); res.textContent = "Resolved: " + n.resolution; wrapc.appendChild(res); }
-    if (n.owner_note) { var on = el("div", "wr-anchor"); on.setAttribute("dir", "auto"); on.textContent = "🔧 For Claude: " + n.owner_note; wrapc.appendChild(on); }
+    if (OWNER && n.owner_note) { var on = el("div", "wr-anchor"); on.setAttribute("dir", "auto"); on.textContent = "🔧 For Claude: " + n.owner_note; wrapc.appendChild(on); }
     var thread = el("div", "wr-thread");
     commentsOf(n.id).forEach(function (c) { var r = el("div", "wr-reply"); r.appendChild(el("div", "wr-rauthor", c.author || "?")); var rb = el("div", "wr-rbody", c.body || ""); rb.setAttribute("dir", "auto"); r.appendChild(rb); thread.appendChild(r); });
     var rr = el("div", "wr-replyrow"); var ri = el("input"); ri.placeholder = "Reply…"; ri.setAttribute("dir", "auto"); rr.appendChild(ri);
@@ -605,21 +618,23 @@
     sendB.addEventListener("click", sendReply); ri.addEventListener("keydown", function (e) { if (e.key === "Enter") sendReply(); });
     thread.appendChild(rr); wrapc.appendChild(thread);
     var acts = el("div", "wr-c-actions");
-    // Owner triage: queue for Claude (optionally with the reply box's text as the instruction) or park for later.
-    var fixB = el("button", "wr-mini wr-mini--fix", n.disposition === "fix" ? "🔧 Queued ✓" : "🔧 Fix");
-    fixB.addEventListener("click", function () {
-      if (n.disposition === "fix") { setDisposition(n, null, null); return; }
-      var instr = ri.value.trim();
-      if (!instr) instr = window.prompt("Instruction for Claude (optional — empty just queues it):", "") || "";
-      ri.value = "";
-      setDisposition(n, "fix", instr || null);
-      if (instr) addComment(n.id, "🔧 " + instr);
-    });
-    acts.appendChild(fixB);
-    var parkB = el("button", "wr-mini", n.disposition === "parked" ? "⏸ Parked ✓" : "⏸ Park");
-    parkB.addEventListener("click", function () { setDisposition(n, n.disposition === "parked" ? null : "parked", undefined); });
-    acts.appendChild(parkB);
-    var tog = el("button", "wr-mini", isDone(n) ? "↺ Reopen" : "✓ Resolve"); tog.addEventListener("click", function () { setStatus(n, isDone(n) ? "open" : "resolved"); }); acts.appendChild(tog);
+    if (OWNER) {
+      // Owner triage: queue for Claude (optionally with the reply box's text as the instruction) or park for later.
+      var fixB = el("button", "wr-mini wr-mini--fix", n.disposition === "fix" ? "🔧 Queued ✓" : "🔧 Fix");
+      fixB.addEventListener("click", function () {
+        if (n.disposition === "fix") { setDisposition(n, null, null); return; }
+        var instr = ri.value.trim();
+        if (!instr) instr = window.prompt("Instruction for Claude (optional — empty just queues it):", "") || "";
+        ri.value = "";
+        setDisposition(n, "fix", instr || null);
+        if (instr) addComment(n.id, "🔧 " + instr);
+      });
+      acts.appendChild(fixB);
+      var parkB = el("button", "wr-mini", n.disposition === "parked" ? "⏸ Parked ✓" : "⏸ Park");
+      parkB.addEventListener("click", function () { setDisposition(n, n.disposition === "parked" ? null : "parked", undefined); });
+      acts.appendChild(parkB);
+      var tog = el("button", "wr-mini", isDone(n) ? "↺ Reopen" : "✓ Resolve"); tog.addEventListener("click", function () { setStatus(n, isDone(n) ? "open" : "resolved"); }); acts.appendChild(tog);
+    }
     if (isMine(n)) {
       var edb = el("button", "wr-mini", "✎ Edit"); edb.addEventListener("click", startEdit); acts.appendChild(edb);
       var del = el("button", "wr-mini wr-mini--danger", "🗑 Delete"); del.addEventListener("click", function () { if (confirm("Delete your note?")) { deleteNote(n); expandedId = null; renderSidebar(); renderAll(); } }); acts.appendChild(del);
@@ -636,7 +651,12 @@
   }
   function pulse(id) { setTimeout(function () { var m = markers.get(id); if (m) { m.el.classList.add("wr-pin--pulse"); setTimeout(function () { m.el.classList.remove("wr-pin--pulse"); }, 1800); } }, 60); }
   function jumpTo(note) {
-    if (!onPage(note)) { var u = note.page_url || "/"; location.href = u + (u.indexOf("?") >= 0 ? "&" : "?") + "review=1"; return; }
+    if (!onPage(note)) {
+      var u = note.page_url || "/", qs = "review=1";
+      if (params.get("board")) qs += "&board=" + encodeURIComponent(params.get("board"));   // keep the board override across pages
+      location.href = u + (u.indexOf("?") >= 0 ? "&" : "?") + qs;
+      return;
+    }
     var a = anchorEl(note); if (a) a.scrollIntoView({ behavior: "smooth", block: "center" });
     pulse(note.id);
   }
@@ -767,6 +787,6 @@
     if (window.supabase && window.supabase.createClient) return cb();
     var s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"; s.onload = cb; s.onerror = function () { console.warn("[review] supabase-js failed to load; running offline (localStorage only)."); }; document.head.appendChild(s);
   }
-  window.__wr = { arm: arm, notes: function () { return notes; }, comments: function () { return comments; }, fetch: fetchNotes, board: BOARD, sidebar: openSidebar, tour: function () { runTour(0); } };
+  window.__wr = { arm: arm, notes: function () { return notes; }, comments: function () { return comments; }, fetch: fetchNotes, board: BOARD, sidebar: openSidebar, tour: function () { runTour(0); }, owner: OWNER };
 })();
 </script>
