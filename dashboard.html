@@ -87,6 +87,20 @@
   .replyrow{display:flex;gap:6px;margin-top:8px}
   .replyrow input{flex:1;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:9px;font:13px var(--sans)}
   .d-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+  /* deliverables panel */
+  .dpanel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:16px;overflow:hidden}
+  .dpanel-h{display:flex;align-items:center;gap:8px;padding:12px 14px;font-weight:700;font-size:14px;cursor:pointer}
+  .dpanel-h:hover{background:var(--panel2)}
+  .dpanel-h .dim{color:var(--dim);font-weight:500;font-size:12px}
+  .dl-form{display:flex;gap:7px;flex-wrap:wrap;padding:0 14px 12px;align-items:center}
+  .dl-form input[type=text],.dl-form select{background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:9px 10px;font:13px var(--sans)}
+  .dl-form input[name=dtitle]{flex:1;min-width:150px}
+  .dl-row{display:flex;gap:9px;align-items:center;padding:9px 14px;border-top:1px solid var(--line);font-size:13px}
+  .dl-row .k{font-size:15px;flex:0 0 auto}
+  .dl-row .t{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dl-row .c{color:var(--dim);font-size:11.5px}
+  .dl-row .sp{flex:1}
+  .dl-row select{background:var(--bg);border:1px solid var(--line);color:var(--dim);border-radius:7px;padding:4px 6px;font:600 11px var(--sans)}
   .foot{margin-top:26px;color:#55627a;font-size:12px;text-align:center}
   #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(90px);background:#0a0e17;color:var(--ink);
     border:1px solid var(--line);border-radius:999px;padding:10px 18px;font:600 13px/1 var(--sans);transition:transform .2s ease;z-index:99;box-shadow:0 10px 30px rgba(0,0,0,.4)}
@@ -112,6 +126,26 @@
   <div class="addrow">
     <input id="addInput" placeholder="Add a site under review — e.g. client-site.com" spellcheck="false" />
     <button class="btn" id="addBtn">Add site</button>
+  </div>
+
+  <div class="dpanel" id="dpanel">
+    <div class="dpanel-h" id="dpanelH">📦 Deliverables <span class="dim" id="dCount"></span><span class="spacer"></span><span class="dim" id="dChev">show ▾</span></div>
+    <div id="dBody" style="display:none">
+      <div class="dl-form">
+        <select id="dClient"></select>
+        <input type="text" id="dTitle" name="dtitle" placeholder="Title — e.g. Brand board v2" />
+        <select id="dKind">
+          <option value="image">image</option><option value="pdf">pdf</option>
+          <option value="deck">deck</option><option value="doc">doc</option>
+          <option value="website">website</option><option value="other">other</option>
+        </select>
+        <input type="file" id="dFile" style="display:none" accept="image/*,application/pdf" />
+        <button class="mini" id="dPick">📎 file</button>
+        <input type="text" id="dSrc" placeholder="…or paste a URL" style="min-width:140px" />
+        <button class="mini primary" id="dAdd">Add</button>
+      </div>
+      <div id="dlList"></div>
+    </div>
   </div>
 
   <div class="tabs" id="tabs"></div>
@@ -218,6 +252,88 @@
     (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject())
       .then(function(){ toast(msg||"Copied"); }).catch(function(){ window.prompt("Copy this:", text); });
   }
+
+  /* ---------- deliverables (Build 2) ---------- */
+  var CK = "wrdash:clients";
+  function clientKeys(){ try{ var v=JSON.parse(localStorage.getItem(CK)||'null')||["lovedust","ruth"]; return v.length?v:["lovedust","ruth"]; }catch(e){ return ["lovedust","ruth"]; } }
+  var DELIV = [];
+  var PROOF_BASE = location.origin + location.pathname.replace(/[^/]*$/, "") + "proof.html";
+  function slug(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40) || "asset"; }
+  function proofLink(d, owner){
+    var u;
+    if (d.kind === "website" && d.src) u = d.src + (d.src.indexOf("?")>=0?"&":"?") + "review=1";
+    else u = PROOF_BASE + "?review=1&board=" + encodeURIComponent(d.board) + "&src=" + encodeURIComponent(d.src||"") + "&title=" + encodeURIComponent(d.title) + (d.kind==="pdf"?"&kind=pdf":"");
+    return owner ? u + "&owner=1" : u;
+  }
+  function loadDeliv(){
+    Promise.all(clientKeys().map(function(ck){
+      return api(ck, "/deliverables?client_key=eq."+encodeURIComponent(ck)+"&order=created_at.desc")
+        .then(function(rows){ return {ck:ck, rows:rows||[]}; })
+        .catch(function(){ return {ck:ck, rows:[]}; });
+    })).then(function(res){ DELIV=res; renderDeliv(); });
+  }
+  function kindIcon2(k){ return k==="pdf"?"📄":k==="image"?"🖼":k==="deck"?"📊":k==="website"?"🌐":k==="doc"?"📝":"📦"; }
+  function renderDeliv(){
+    var total=0; DELIV.forEach(function(g){ total+=g.rows.length; });
+    $("#dCount").textContent = total ? "("+total+")" : "";
+    var sel=$("#dClient"); var cur=sel.value; sel.innerHTML="";
+    clientKeys().forEach(function(ck){ var o=document.createElement("option"); o.value=ck; o.textContent=ck; sel.appendChild(o); });
+    if(cur) sel.value=cur;
+    var list=$("#dlList"); list.innerHTML="";
+    DELIV.forEach(function(g){
+      g.rows.forEach(function(d){
+        var row=el("div","dl-row");
+        row.appendChild(el("span","k",kindIcon2(d.kind)));
+        row.appendChild(el("span","t",d.title));
+        row.appendChild(el("span","c",g.ck));
+        row.appendChild(el("span","sp"));
+        var st=document.createElement("select");
+        ["under_review","approved","archived"].forEach(function(s){ var o=document.createElement("option"); o.value=s; o.textContent=s.replace("_"," "); if(d.status===s)o.selected=true; st.appendChild(o); });
+        st.addEventListener("change",function(){
+          fetch(REST+"/deliverables?id=eq."+d.id,{method:"PATCH",headers:Object.assign(hdr(g.ck),{Prefer:"return=minimal"}),body:JSON.stringify({status:st.value})})
+            .then(function(r){ if(!r.ok) throw 0; toast("Status saved"); }).catch(function(){ toast("Failed"); });
+        });
+        row.appendChild(st);
+        var op=el("a","mini","↗ proof"); op.href=proofLink(d,true); op.target="_blank"; op.style.textDecoration="none"; row.appendChild(op);
+        var cp=el("button","mini","copy client link"); cp.addEventListener("click",function(){ copy(proofLink(d,false),"Client link copied"); }); row.appendChild(cp);
+        list.appendChild(row);
+      });
+    });
+    if(!total) list.appendChild(el("div","dl-row","No deliverables yet — add one above."));
+  }
+  $("#dpanelH").addEventListener("click",function(){
+    var b=$("#dBody"); var open=b.style.display!=="none";
+    b.style.display=open?"none":"block"; $("#dChev").textContent=open?"show ▾":"hide ▴";
+    if(!open) loadDeliv();
+  });
+  var dPicked=null;
+  $("#dPick").addEventListener("click",function(){ $("#dFile").click(); });
+  $("#dFile").addEventListener("change",function(){ dPicked=$("#dFile").files[0]||null; $("#dPick").textContent=dPicked?("📎 "+dPicked.name.slice(0,14)):"📎 file"; });
+  $("#dAdd").addEventListener("click",function(){
+    var ck=$("#dClient").value, title=$("#dTitle").value.trim(), kind=$("#dKind").value, srcIn=$("#dSrc").value.trim();
+    if(!ck||!title){ toast("Client + title required"); return; }
+    var p;
+    if(dPicked){
+      var path=ck+"/"+(crypto.randomUUID?crypto.randomUUID():Date.now())+"-"+dPicked.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+      p=fetch((C.supabaseUrl||"").replace(/\/$/,"")+"/storage/v1/object/deliverables/"+path,{
+        method:"POST",headers:{apikey:C.supabaseAnon,Authorization:"Bearer "+C.supabaseAnon,"x-board-key":ck,"Content-Type":dPicked.type||"application/octet-stream"},body:dPicked
+      }).then(function(r){ if(!r.ok) throw new Error("upload HTTP "+r.status);
+        return (C.supabaseUrl||"").replace(/\/$/,"")+"/storage/v1/object/public/deliverables/"+path; });
+    } else if(srcIn){ p=Promise.resolve(srcIn); }
+    else { toast("Attach a file or paste a URL"); return; }
+    p.then(function(src){
+      var board=ck+"-"+slug(title);
+      return fetch(REST+"/deliverables",{method:"POST",headers:Object.assign(hdr(ck),{Prefer:"return=representation"}),
+        body:JSON.stringify({client_key:ck,kind:kind,title:title,board:board,src:src})})
+        .then(function(r){ if(!r.ok) throw new Error("insert HTTP "+r.status); return r.json(); })
+        .then(function(rows){
+          var b=boards(); if(b.indexOf(board)<0){ b.push(board); saveBoards(b); }
+          $("#dTitle").value=""; $("#dSrc").value=""; dPicked=null; $("#dPick").textContent="📎 file"; $("#dFile").value="";
+          copy(proofLink(rows[0],false),"Created — client proof link copied");
+          loadDeliv(); load();
+        });
+    }).catch(function(e){ toast("Failed: "+(e.message||e)); });
+  });
 
   /* ---------- render: tabs ---------- */
   function renderTabs(){
@@ -410,6 +526,7 @@
   window.addEventListener("focus",load);
   setInterval(function(){ if(!document.hidden) load(); }, 12000);   // the live loop — no manual refresh
   load();
+  loadDeliv();
 })();
 </script>
 </body>

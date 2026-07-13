@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex,nofollow" />
+<title>Proof — Pixeldust Review</title>
+<style>
+  :root{ --bg:#171b24; --ink:#e7ecf5; --dim:#93a0b8; --line:#26324a;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh}
+  header{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#4f8cff,#7c5cff);display:flex;align-items:center;justify-content:center;font-size:14px}
+  h1{font-size:15px;margin:0;font-weight:700}
+  .sub{color:var(--dim);font-size:11.5px;margin-top:1px}
+  main{display:flex;justify-content:center;padding:26px 16px 120px}
+  #asset{max-width:1100px;width:100%}
+  #asset img{display:block;width:100%;height:auto;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.45);background:#fff}
+  #asset .pdf{width:100%;height:calc(100vh - 140px);border:0;border-radius:10px;background:#fff}
+  .missing{border:1px dashed var(--line);border-radius:12px;padding:60px 20px;text-align:center;color:var(--dim);line-height:1.7}
+  .hinttip{position:fixed;top:64px;right:16px;z-index:5;background:#0a0e17;border:1px solid var(--line);color:var(--dim);
+    border-radius:11px;padding:9px 13px;font-size:12px;max-width:230px;line-height:1.5}
+</style>
+</head>
+<body>
+  <header>
+    <div class="logo">◑</div>
+    <div>
+      <h1 id="ttl">Proof</h1>
+      <div class="sub" id="sub">Pixeldust review — leave notes right on the asset</div>
+    </div>
+  </header>
+  <main><section id="asset"></section></main>
+  <div class="hinttip" id="tip">📍 Pin or ✎ Draw on the asset — your notes go straight to the studio.</div>
+
+  <script src="config.js"></script>
+  <script>
+  (function(){
+    var q = new URLSearchParams(location.search);
+    var src = q.get("src") || "";
+    var title = q.get("title") || "Untitled asset";
+    var kind = q.get("kind") || (/[.]pdf(\?|$)/i.test(src) ? "pdf" : "image");
+    document.getElementById("ttl").textContent = title;
+    document.title = "Proof — " + title;
+    var mount = document.getElementById("asset");
+    if (!src) {
+      var d = document.createElement("div"); d.className = "missing";
+      d.textContent = "No asset URL (?src=...) — check the proof link.";
+      mount.appendChild(d);
+    } else if (kind === "pdf") {
+      var e = document.createElement("embed"); e.className = "pdf"; e.src = src; e.type = "application/pdf";
+      mount.appendChild(e);
+      document.getElementById("tip").textContent = "📍 Pin or ✎ Draw over the document — notes go straight to the studio.";
+    } else {
+      var im = document.createElement("img"); im.src = src; im.alt = title;
+      mount.appendChild(im);
+    }
+    setTimeout(function(){ var t = document.getElementById("tip"); if (t) t.style.display = "none"; }, 9000);
+  })();
+  </script>
+  <script src="embed.js" defer></script>
+</body>
+</html>

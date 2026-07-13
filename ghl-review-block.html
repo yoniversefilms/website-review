@@ -204,12 +204,23 @@
   function renderDock() {
     pinBtn.innerHTML = (armed && tool === "pin") ? "✕ Cancel" : '<span>📍</span> Pin';
     drawBtn.innerHTML = (armed && tool === "draw") ? "✕ Cancel" : '<span>✎</span> Draw';
+    if (boxBtn) boxBtn.innerHTML = (armed && tool === "box") ? "✕ Cancel" : '<span>▭</span> Box';
+    if (hlBtn) hlBtn.innerHTML = (armed && tool === "text") ? "✕ Cancel" : '<span>🖍</span> Text';
     listBtn.innerHTML = 'Notes <span class="wr-badge">' + openCount() + "</span>";
     hideBtn.textContent = "👁 Hide"; hideBtn.title = "Hide review tools";
   }
   pinBtn.addEventListener("click", function () { (armed && tool === "pin") ? disarm() : arm("pin"); });
   drawBtn.addEventListener("click", function () { (armed && tool === "draw") ? disarm() : arm("draw"); });
   listBtn.addEventListener("click", function () { sidebarOpen ? closeSidebar() : openSidebar(); });
+  // Owner-only extra tools: ▭ box + 🖍 text-highlight (clients get Pin + Draw only).
+  var boxBtn = null, hlBtn = null;
+  if (OWNER) {
+    boxBtn = el("button", "wr-btn wr-btn--go");
+    hlBtn = el("button", "wr-btn wr-btn--go");
+    dock.insertBefore(boxBtn, listBtn); dock.insertBefore(hlBtn, listBtn);
+    boxBtn.addEventListener("click", function () { (armed && tool === "box") ? disarm() : arm("box"); });
+    hlBtn.addEventListener("click", function () { (armed && tool === "text") ? disarm() : arm("text"); });
+  }
   hideBtn.addEventListener("click", collapse);
 
   function collapse() {
@@ -220,8 +231,8 @@
   function expand() { collapsed = false; wrap.classList.remove("wr--collapsed"); if (dot) dot.style.display = "none"; }
 
   /* ---------------- capture (pin + draw) ---------------- */
-  var captureLayer = null, hintEl = null, live = null, prevOverflow = null;
-  var HINTS = { pin: "Tap the spot you want to comment on", draw: "Draw on the page to point something out" };
+  var captureLayer = null, hintEl = null, live = null, prevOverflow = null, textMode = false;
+  var HINTS = { pin: "Tap the spot you want to comment on", draw: "Draw on the page to point something out", box: "Drag a box around the area", text: "Select the text you want to comment on" };
   function hint(t) { var h = el("div", "wr-hint", t); wrap.appendChild(h); return h; }
   function blockTouch(e) { e.preventDefault(); }   // stops iOS panning the (possibly zoomed) page mid-gesture
   function lockScroll() {
@@ -235,10 +246,14 @@
     disarm(); tool = kind || "pin"; armed = true; renderDock(); if (sidebarOpen) closeSidebar();
     hintEl = hint(HINTS[tool] || HINTS.pin);
     document.addEventListener("keydown", onEsc, true);
+    if (tool === "text") {   // selection mode: no capture layer, page stays scrollable
+      textMode = true; document.addEventListener("mouseup", onTextSelect, true); return;
+    }
     captureLayer = el("div", "wr-capture"); wrap.appendChild(captureLayer);
     captureLayer.addEventListener("touchmove", blockTouch, { passive: false });
     lockScroll();
     if (tool === "pin") captureLayer.addEventListener("click", onCaptureClick, true);
+    else if (tool === "box") armBox();
     else if (tool === "draw") armDraw();
   }
   function disarm() {
@@ -246,6 +261,7 @@
     if (captureLayer) { captureLayer.remove(); captureLayer = null; }
     if (hintEl) { hintEl.remove(); hintEl = null; }
     if (live) { live.remove(); live = null; }
+    if (textMode) { document.removeEventListener("mouseup", onTextSelect, true); textMode = false; }
     document.removeEventListener("keydown", onEsc, true);
   }
   function onEsc(e) { if (e.key === "Escape") disarm(); }
@@ -269,6 +285,19 @@
     disarm(); ensureName(function () { openComposer(e.clientX, e.clientY, a, "pin"); });
   }
   function grab(e) { try { captureLayer.setPointerCapture(e.pointerId); } catch (err) {} }
+  function setRect(node, x1, y1, x2, y2) { node.style.left = Math.min(x1, x2) + "px"; node.style.top = Math.min(y1, y2) + "px"; node.style.width = Math.abs(x2 - x1) + "px"; node.style.height = Math.abs(y2 - y1) + "px"; }
+  function armBox() {
+    var start = null;
+    captureLayer.addEventListener("pointerdown", function (e) { e.preventDefault(); grab(e); start = { x: e.clientX, y: e.clientY }; live = el("div", "wr-rubber"); wrap.appendChild(live); setRect(live, e.clientX, e.clientY, e.clientX, e.clientY); });
+    captureLayer.addEventListener("pointermove", function (e) { if (start && live) { e.preventDefault(); setRect(live, start.x, start.y, e.clientX, e.clientY); } });
+    captureLayer.addEventListener("pointerup", function (e) {
+      if (!start) return; var s = start; start = null; if (live) { live.remove(); live = null; }
+      var x = Math.min(s.x, e.clientX), y = Math.min(s.y, e.clientY), w = Math.abs(e.clientX - s.x), h = Math.abs(e.clientY - s.y);
+      if (w < 6 || h < 6) { disarm(); return; }
+      var a = regionAnchor(x, y, w, h); disarm(); ensureName(function () { openComposer(x, y, a, "box"); });
+    });
+    captureLayer.addEventListener("pointercancel", function () { start = null; if (live) { live.remove(); live = null; } });
+  }
   function armDraw() {
     var drawing = false, pts = [], poly = null;
     captureLayer.addEventListener("pointerdown", function (e) {
@@ -308,6 +337,15 @@
       desc: (clicked && clicked.tagName ? clicked.tagName.toLowerCase() : "el") + (a.id ? " in #" + a.id : "") + (h && h.textContent ? ' — "' + h.textContent.trim().slice(0, 40) + '"' : "")
     };
   }
+  function regionAnchor(x, y, w, h) {
+    var elm = probe(x + w / 2, y + h / 2), a = sectionOf(elm), r = a.getBoundingClientRect();
+    var rw = r.width || 1, rh = r.height || 1;
+    return {
+      section_id: a.id || null, selector: selOf(a), target_text: grabText(elm),
+      geometry: { x: round((x - r.left) / rw), y: round((y - r.top) / rh), w: round(w / rw), h: round(h / rh) },
+      desc: "region in " + (a.id ? "#" + a.id : "page")
+    };
+  }
   function drawAnchor(pts) {
     var xs = pts.map(function (p) { return p[0]; }), ys = pts.map(function (p) { return p[1]; });
     var minX = Math.min.apply(null, xs), minY = Math.min.apply(null, ys), maxX = Math.max.apply(null, xs), maxY = Math.max.apply(null, ys);
@@ -318,6 +356,25 @@
       section_id: a.id || null, selector: selOf(a), target_text: null,
       geometry: { paths: norm }, desc: "drawing in " + (a.id ? "#" + a.id : "page"), _x: minX, _y: minY
     };
+  }
+
+  function onTextSelect(e) {
+    if (!host.isConnected) { document.removeEventListener("mouseup", onTextSelect, true); return; }   // stale instance guard
+    try {
+      var sel = window.getSelection(); if (!sel || sel.isCollapsed) return;
+      var quote = sel.toString().trim(); if (quote.length < 2) return;
+      var range = sel.getRangeAt(0), rect = range.getBoundingClientRect();
+      var common = range.commonAncestorContainer; if (common.nodeType === 3) common = common.parentElement;
+      if (host.contains(common)) return;   // ignore selections inside our own UI
+      var a = sectionOf(common), r = a.getBoundingClientRect(), rw = r.width || 1, rh = r.height || 1;
+      var anchor = {
+        section_id: a.id || null, selector: selOf(a), target_text: quote.slice(0, 300),
+        geometry: { x: round((rect.left - r.left) / rw), y: round((rect.top - r.top) / rh), w: round(rect.width / rw), h: round(rect.height / rh) },
+        desc: "text in " + (a.id ? "#" + a.id : "page")
+      };
+      var x = rect.left, y = rect.bottom; sel.removeAllRanges(); disarm();
+      ensureName(function () { openComposer(x, y, anchor, "text"); });
+    } catch (err) { disarm(); }
   }
 
   /* ---------------- name gate ---------------- */

@@ -33,11 +33,18 @@ See **[PLAN.md](PLAN.md)** for the full design and rationale.
 2. Run **[migrate-universal-snippet.sql](migrate-universal-snippet.sql)** — lets a site
    self-register its board.
 3. Run **[hardening.sql](hardening.sql)** — locks down destructive writes (see below).
-   Re-run it after updates: the current grant also allows `body` so reviewers can
-   edit their own notes.
-4. Optional: run **[notify.sql](notify.sql)** — pings a GHL Inbound-Webhook workflow on
-   every new note (email "Ruth left a note" with a click-to-review link). Enable the
-   `pg_net` extension first and paste your webhook URL into the file.
+4. Run **[fix-park.sql](fix-park.sql)** — owner triage columns (disposition/owner_note).
+5. Run **[review-os-core.sql](review-os-core.sql)** — clients + deliverables + the
+   50MB `deliverables` files bucket (proof pages for PDFs/images/decks).
+6. Optional: run **[notify.sql](notify.sql)** — pings a GHL Inbound-Webhook workflow on
+   every new note (email with a click-to-review link). Enable `pg_net` first and paste
+   your webhook URL into the file.
+
+## Owner vs client
+
+Open any review link once with **`&owner=1`** to mark that browser as owner (triage UI:
+Fix/Park/Resolve + ▭ Box/🖍 Text tools). Clients get plain `?review=1`: Pin, Draw,
+replies, photos, and green resolved pins — nothing else. `&owner=0` un-claims.
 
 ## Sync for Claude (auto-discovery)
 
