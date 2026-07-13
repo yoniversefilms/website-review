@@ -77,6 +77,8 @@
   .d-sec code{font-family:var(--mono);font-size:11.5px;color:var(--accent)}
   .d-body{white-space:pre-wrap;font-size:14px;line-height:1.55}
   .d-quote{color:var(--dim);border-left:2px solid var(--line);padding-left:8px;margin-top:6px;font-size:12.5px}
+  .photos{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .photos img{width:74px;height:74px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer}
   .d-warn{border-color:rgba(245,180,69,.5)} .d-warn .lbl{color:var(--warn)}
   .d-flag{border-color:rgba(255,107,107,.5)} .d-flag .lbl{color:var(--danger)}
   .d-ok{border-color:rgba(62,207,142,.5)} .d-ok .lbl{color:var(--ok)}
@@ -161,10 +163,13 @@
   function fetchBoard(board){
     return Promise.all([
       api(board, "/notes?project_key=eq."+encodeURIComponent(board)+"&order=created_at.asc&select=*"),
-      api(board, "/comments?project_key=eq."+encodeURIComponent(board)+"&order=created_at.asc&select=note_id,author,body,created_at")
-    ]).then(function(r){ return { board:board, notes:r[0]||[], comments:r[1]||[], error:null }; })
-      .catch(function(e){ return { board:board, notes:[], comments:[], error:e.message }; });
+      api(board, "/comments?project_key=eq."+encodeURIComponent(board)+"&order=created_at.asc&select=note_id,author,body,created_at"),
+      api(board, "/attachments?project_key=eq."+encodeURIComponent(board)+"&select=note_id,storage_path")
+    ]).then(function(r){ return { board:board, notes:r[0]||[], comments:r[1]||[], atts:r[2]||[], error:null }; })
+      .catch(function(e){ return { board:board, notes:[], comments:[], atts:[], error:e.message }; });
   }
+  function attsOf(r, id){ return (r.atts||[]).filter(function(a){ return a.note_id===id; }); }
+  function photoURL(p){ return (C.supabaseUrl||"").replace(/\/$/,"") + "/storage/v1/object/public/review-photos/" + p; }
 
   /* ---------- state machine ---------- */
   function tabOf(n){
@@ -271,6 +276,7 @@
         if(n.flag_reason) meta.appendChild(el("span","tag flagged","🚩 retry"));
         if(n.status!=="open") meta.appendChild(el("span","tag done",n.status));
         var nc = commentsOf(r,n.id).length; if(nc) meta.appendChild(el("span","tag","💬 "+nc));
+        var np = attsOf(r,n.id).length; if(np) meta.appendChild(el("span","tag","📷 "+np));
         meta.appendChild(el("span",null,ago(n.updated_at||n.created_at)));
         main.appendChild(meta); row.appendChild(main);
         row.addEventListener("click",function(){ selected={board:r.board, id:n.id}; render(); });
@@ -312,6 +318,16 @@
     var noteSec=el("div","d-sec");
     noteSec.appendChild(el("div","lbl",(n.author||"?")+" · "+(layoutOf(n)||"")+" · "+ago(n.created_at)+" ago"));
     var body=el("div","d-body",n.body||"(no text)"); body.setAttribute("dir","auto"); noteSec.appendChild(body);
+    var ph=attsOf(r,n.id);
+    if(ph.length){
+      var pg=el("div","photos");
+      ph.forEach(function(a2){
+        var im=document.createElement("img"); im.src=photoURL(a2.storage_path); im.loading="lazy";
+        im.addEventListener("click",function(){ window.open(photoURL(a2.storage_path),"_blank"); });
+        pg.appendChild(im);
+      });
+      noteSec.appendChild(pg);
+    }
     d.appendChild(noteSec);
 
     if(n.owner_note){ var os=el("div","d-sec d-warn"); os.appendChild(el("div","lbl","🔧 Your instruction to Claude"));

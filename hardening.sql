@@ -30,10 +30,11 @@ revoke delete on public.attachments from anon;
 drop policy if exists "review update own project folder" on storage.objects;
 drop policy if exists "review delete own project folder" on storage.objects;
 
--- 4) STORAGE bucket — images only, max 5 MB. Prevents arbitrary HTML/JS or
---    large-file hosting under your Supabase project.
+-- 4) STORAGE bucket — images only, max 10 MB. Prevents arbitrary HTML/JS or
+--    large-file hosting under your Supabase project. (The widget re-encodes
+--    oversized/exotic camera formats to JPEG client-side before upload.)
 update storage.buckets
-   set file_size_limit = 5242880,
+   set file_size_limit = 10485760,
        allowed_mime_types = array['image/png','image/jpeg','image/webp','image/gif']
  where id = 'review-photos';
 

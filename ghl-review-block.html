@@ -51,6 +51,8 @@
   var supa = null;
   var notes = cacheRead();
   var comments = [];
+  var atts = [];                               // attachments metadata (photos)
+  var pendingFiles = {};                        // note.id -> File[] awaiting the note's insert (in-memory only)
   var armed = false, tool = "pin";
   var markers = new Map();
   var sidebarOpen = false, collapsed = false, expandedId = null, layoutFilter = "current";
@@ -147,6 +149,15 @@
     '.wr-mini{border:1px solid #d7dbe2;background:#fff;border-radius:8px;padding:6px 10px;font:600 12px/1 inherit;cursor:pointer;color:#3a4152}' +
     '.wr-mini--go{background:#2b6cff;color:#fff;border-color:#2b6cff}.wr-mini--danger{color:#c0392b}' +
     '.wr-edit textarea{width:100%;min-height:64px;resize:vertical;border:1px solid #d7dbe2;border-radius:9px;padding:8px;font:inherit;color:inherit}' +
+    /* photos */
+    '.wr-attrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}' +
+    '.wr-attbtn{border:1px dashed #c7cdd8;background:#fff;border-radius:9px;padding:7px 10px;font:600 12px/1 inherit;cursor:pointer;color:#3a4152}' +
+    '.wr-chipimg{position:relative;width:54px;height:54px;border-radius:8px;overflow:hidden;border:1px solid #e2e5ea}' +
+    '.wr-chipimg img{width:100%;height:100%;object-fit:cover;display:block}' +
+    '.wr-chipimg button{position:absolute;top:1px;right:1px;border:0;background:rgba(0,0,0,.55);color:#fff;border-radius:50%;width:17px;height:17px;font-size:10px;line-height:1;cursor:pointer}' +
+    '.wr-photos{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px}' +
+    '.wr-photos img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #e2e5ea;cursor:pointer}' +
+    '.wr-upl{color:#8a93a3;font-size:12px}' +
     /* popovers */
     '.wr-pop{position:fixed;z-index:2147483003;width:min(300px,86vw);background:#fff;border:1px solid #e2e5ea;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.24);padding:12px}' +
     '.wr-pop textarea{width:100%;min-height:74px;resize:vertical;border:1px solid #d7dbe2;border-radius:10px;padding:9px;font:inherit;color:inherit}' +
@@ -382,13 +393,29 @@
     var xb = el("button", "wr-x", "✕"); head.appendChild(xb); pop.appendChild(head);
     if (a.target_text) { var q = el("div", "wr-anchor"); q.setAttribute("dir", "auto"); q.textContent = "“" + a.target_text + "”"; pop.appendChild(q); }
     var ta = el("textarea"); ta.placeholder = "What should change here?"; ta.setAttribute("dir", "auto"); pop.appendChild(ta);
+    // photo attach
+    var picked = [];
+    var fileIn = document.createElement("input"); fileIn.type = "file"; fileIn.accept = "image/*"; fileIn.multiple = true; fileIn.style.display = "none"; pop.appendChild(fileIn);
+    var attRow = el("div", "wr-attrow");
+    var attBtn = el("button", "wr-attbtn", "📎 Add photo"); attRow.appendChild(attBtn); pop.appendChild(attRow);
+    attBtn.addEventListener("click", function (e) { e.preventDefault(); fileIn.click(); });
+    fileIn.addEventListener("change", function () {
+      Array.prototype.forEach.call(fileIn.files, function (f) {
+        picked.push(f);
+        var chip = el("div", "wr-chipimg");
+        var im = document.createElement("img"); im.src = URL.createObjectURL(f); chip.appendChild(im);
+        var x2 = el("button", null, "✕"); x2.addEventListener("click", function (e2) { e2.preventDefault(); picked.splice(picked.indexOf(f), 1); chip.remove(); });
+        chip.appendChild(x2); attRow.appendChild(chip);
+      });
+      fileIn.value = "";
+    });
     var row = el("div", "wr-row"); var save = el("button", "wr-btn wr-btn--go", "Save"); row.appendChild(save); pop.appendChild(row);
     openPop = pop; positionPop(pop, x, y); ta.focus();
     xb.addEventListener("click", closePop);
     function submit() {
-      var body = ta.value.trim(); if (!body) return ta.focus();
+      var body = ta.value.trim(); if (!body && !picked.length) return ta.focus();
       closePop();
-      saveNote({ kind: kind, section_id: a.section_id, target_selector: a.selector, target_text: a.target_text, elem_desc: a.desc, geometry: a.geometry, viewport_w: innerWidth, viewport_h: innerHeight, body: body });
+      saveNote({ kind: kind, section_id: a.section_id, target_selector: a.selector, target_text: a.target_text, elem_desc: a.desc, geometry: a.geometry, viewport_w: innerWidth, viewport_h: innerHeight, body: body || "(photo)" }, picked);
       openSidebar();
     }
     save.addEventListener("click", submit);
@@ -533,6 +560,7 @@
     if (n.disposition === "fix") meta.appendChild(el("span", "wr-tag wr-tag--fix", "🔧 fix"));
     if (n.disposition === "parked") meta.appendChild(el("span", "wr-tag wr-tag--park", "⏸ parked"));
     var nc = commentsOf(n.id).length; if (nc) meta.appendChild(el("span", "wr-tag", "💬 " + nc));
+    var np = attsOf(n.id).length; if (np) meta.appendChild(el("span", "wr-tag", "📷 " + np));
     if (!onPage(n)) meta.appendChild(el("span", "wr-tag", n.page_url || "/"));
     main.appendChild(meta); head.appendChild(main);
     head.addEventListener("click", function () { var opening = !open; expandedId = opening ? n.id : null; renderSidebar(); renderAll(); if (opening) jumpTo(n); });
@@ -550,11 +578,28 @@
     var bodyBox = el("div"); renderBody();
     function renderBody() { bodyBox.innerHTML = ""; var b = el("div", "wr-body", n.body || ""); b.setAttribute("dir", "auto"); bodyBox.appendChild(b); }
     wrapc.appendChild(bodyBox);
+    var ph = attsOf(n.id);
+    if (ph.length) {
+      var pg = el("div", "wr-photos");
+      ph.forEach(function (a2) {
+        var im = document.createElement("img"); im.src = pubURL(a2.storage_path); im.loading = "lazy";
+        im.addEventListener("click", function () { window.open(pubURL(a2.storage_path), "_blank"); });
+        pg.appendChild(im);
+      });
+      wrapc.appendChild(pg);
+    }
     if (n.resolution) { var res = el("div", "wr-anchor"); res.textContent = "Resolved: " + n.resolution; wrapc.appendChild(res); }
     if (n.owner_note) { var on = el("div", "wr-anchor"); on.setAttribute("dir", "auto"); on.textContent = "🔧 For Claude: " + n.owner_note; wrapc.appendChild(on); }
     var thread = el("div", "wr-thread");
     commentsOf(n.id).forEach(function (c) { var r = el("div", "wr-reply"); r.appendChild(el("div", "wr-rauthor", c.author || "?")); var rb = el("div", "wr-rbody", c.body || ""); rb.setAttribute("dir", "auto"); r.appendChild(rb); thread.appendChild(r); });
     var rr = el("div", "wr-replyrow"); var ri = el("input"); ri.placeholder = "Reply…"; ri.setAttribute("dir", "auto"); rr.appendChild(ri);
+    var rIn = document.createElement("input"); rIn.type = "file"; rIn.accept = "image/*"; rIn.multiple = true; rIn.style.display = "none"; rr.appendChild(rIn);
+    var rAtt = el("button", "wr-mini", "📎"); rAtt.title = "Attach photo to this note"; rr.appendChild(rAtt);
+    rAtt.addEventListener("click", function () { if (n._pending) return; rIn.click(); });
+    rIn.addEventListener("change", function () {
+      var fs = Array.prototype.slice.call(rIn.files); rIn.value = "";
+      if (fs.length) ensureName(function () { rAtt.textContent = "…"; uploadPhotos(n, fs, function () { rAtt.textContent = "📎"; }); });
+    });
     var sendB = el("button", "wr-mini wr-mini--go", "Send"); rr.appendChild(sendB);
     function sendReply() { var v = ri.value.trim(); if (!v) return; ri.value = ""; ensureName(function () { addComment(n.id, v); }); }
     sendB.addEventListener("click", sendReply); ri.addEventListener("keydown", function (e) { if (e.key === "Enter") sendReply(); });
@@ -596,6 +641,50 @@
     pulse(note.id);
   }
 
+  /* ---------------- photos ---------------- */
+  function pubURL(p) { return CFG.supabaseUrl.replace(/\/$/, "") + "/storage/v1/object/public/review-photos/" + p; }
+  function attsOf(id) { return atts.filter(function (a) { return a.note_id === id; }); }
+  // Re-encode to JPEG (max 2000px) when the file is big or an exotic camera format
+  // (e.g. HEIC on Safari); small web-friendly images pass through untouched.
+  function prepPhoto(file) {
+    var okType = /^image\/(png|jpe?g|webp|gif)$/i.test(file.type);
+    if (okType && file.size <= 1500000) {
+      return Promise.resolve({ blob: file, ext: (file.type.split("/")[1] || "jpg").replace("jpeg", "jpg"), mime: file.type });
+    }
+    return new Promise(function (res, rej) {
+      var img = new Image(), u = URL.createObjectURL(file);
+      img.onload = function () {
+        var MAX = 2000, w = img.naturalWidth, h = img.naturalHeight, s = Math.min(1, MAX / Math.max(w, h, 1));
+        var c = document.createElement("canvas"); c.width = Math.round(w * s) || 1; c.height = Math.round(h * s) || 1;
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(u);
+        c.toBlob(function (b) { b ? res({ blob: b, ext: "jpg", mime: "image/jpeg" }) : rej(new Error("couldn't encode image")); }, "image/jpeg", 0.85);
+      };
+      img.onerror = function () { URL.revokeObjectURL(u); rej(new Error("couldn't read this image format")); };
+      img.src = u;
+    });
+  }
+  function uploadPhotos(note, files, doneCb) {
+    files = (files || []).slice();
+    if (!files.length) { if (doneCb) doneCb(); return; }
+    if (!supa) { console.warn("[review] photos need a connection — note saved, attach again later."); if (doneCb) doneCb(); return; }
+    var left = files.length;
+    files.forEach(function (f) {
+      prepPhoto(f).then(function (p) {
+        if (p.blob.size > 10485760) throw new Error("photo over 10 MB after compression");
+        var path = "projects/" + BOARD + "/" + note.id + "/" + uid() + "." + p.ext;
+        return supa.storage.from("review-photos").upload(path, p.blob, { contentType: p.mime }).then(function (r) {
+          if (r.error) throw r.error;
+          return supa.from("attachments").insert({ note_id: note.id, project_key: BOARD, storage_path: path, mime: p.mime, bytes: p.blob.size, author: ME }).then(function (r2) {
+            if (r2.error) throw r2.error;
+            atts.push({ note_id: note.id, project_key: BOARD, storage_path: path, mime: p.mime, author: ME });
+          });
+        });
+      }).catch(function (e) { console.warn("[review] photo upload failed:", e.message || e); })
+        .then(function () { if (--left === 0) { renderAll(); if (sidebarOpen) renderSidebar(); if (doneCb) doneCb(); } });
+    });
+  }
+
   /* ---------------- data ops ---------------- */
   function colsOf(n) {
     var c = { id: n.id, project_key: BOARD, kind: n.kind, page_url: n.page_url, page_title: n.page_title, section_id: n.section_id, target_selector: n.target_selector, target_text: n.target_text, elem_desc: n.elem_desc, geometry: n.geometry, viewport_w: n.viewport_w, viewport_h: n.viewport_h, body: n.body, status: n.status, author: n.author, author_id: n.author_id };
@@ -603,13 +692,19 @@
     if (n.disposition != null) { c.disposition = n.disposition; c.owner_note = n.owner_note || null; }
     return c;
   }
-  function saveNote(partial) {
+  function saveNote(partial, files) {
     var rec = Object.assign({ id: uid(), project_key: BOARD, kind: "pin", page_url: PAGE, page_title: document.title, status: "open", author: ME, author_id: AID, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }, partial);
+    if (files && files.length) pendingFiles[rec.id] = files;   // photos wait for the note row (FK)
     rec._pending = true; notes.push(rec); cacheWrite(); renderAll(); flushOne(rec);
   }
   function flushOne(rec) {
     if (!supa || !rec._pending) return;
-    supa.from("notes").insert(colsOf(rec)).then(function (res) { if (res.error) { console.warn("[review] insert queued (retry on next sync):", res.error.message); return; } delete rec._pending; cacheWrite(); });
+    supa.from("notes").insert(colsOf(rec)).then(function (res) {
+      if (res.error) { console.warn("[review] insert queued (retry on next sync):", res.error.message); return; }
+      delete rec._pending; cacheWrite();
+      var f = pendingFiles[rec.id];
+      if (f) { delete pendingFiles[rec.id]; uploadPhotos(rec, f); }
+    });
   }
   function flushPending() { notes.slice().forEach(function (n) { if (n._pending) flushOne(n); }); }
   function setStatus(note, status) {
@@ -656,6 +751,7 @@
       notes = server.concat(pending); cacheWrite(); renderAll(); flushPending();
     });
     supa.from("comments").select("*").eq("project_key", BOARD).order("created_at", { ascending: true }).then(function (res) { if (!res.error) { comments = res.data || []; if (sidebarOpen) renderSidebar(); renderAll(); } });
+    supa.from("attachments").select("*").eq("project_key", BOARD).then(function (res) { if (!res.error) { atts = res.data || []; if (sidebarOpen) renderSidebar(); } });
   }
 
   /* ---------------- boot ---------------- */
