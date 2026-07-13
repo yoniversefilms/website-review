@@ -87,6 +87,20 @@
   .replyrow{display:flex;gap:6px;margin-top:8px}
   .replyrow input{flex:1;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:9px;font:13px var(--sans)}
   .d-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+  /* builds (PR) panel + preview modal */
+  .pr-row{display:flex;gap:9px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);font-size:13px;flex-wrap:wrap}
+  .pr-row .t{font-weight:600;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pr-row .br{font-family:var(--mono);font-size:11px;color:var(--accent)}
+  .pr-row .dim2{color:var(--dim);font-size:11.5px}
+  #pvModal{position:fixed;inset:0;z-index:80;background:rgba(6,9,15,.88);display:none;flex-direction:column}
+  #pvModal.open{display:flex}
+  .pv-head{display:flex;gap:10px;align-items:center;padding:12px 16px;color:var(--ink)}
+  .pv-head select{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 8px;font:12px var(--sans)}
+  .pv-cols{flex:1;display:flex;gap:10px;padding:0 16px 16px;min-height:0}
+  .pv-col{flex:1;display:flex;flex-direction:column;min-width:0}
+  .pv-col .lbl2{font:700 11px var(--sans);letter-spacing:.06em;color:var(--dim);padding:0 2px 6px}
+  .pv-col .lbl2.after{color:var(--ok)}
+  .pv-col iframe{flex:1;border:1px solid var(--line);border-radius:10px;background:#fff;width:100%}
   /* deliverables panel */
   .dpanel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:16px;overflow:hidden}
   .dpanel-h{display:flex;align-items:center;gap:8px;padding:12px 14px;font-weight:700;font-size:14px;cursor:pointer}
@@ -120,6 +134,7 @@
     </div>
     <div class="spacer"></div>
     <span class="live"><span class="dot"></span><span id="liveTxt">live</span></span>
+    <button class="btn ghost" id="ghKeyBtn" title="GitHub token for the Builds panel">🔑</button>
     <button class="btn ghost" id="refreshBtn">↻</button>
   </header>
 
@@ -149,6 +164,11 @@
     </div>
   </div>
 
+  <div class="dpanel" id="bpanel">
+    <div class="dpanel-h" id="bpanelH">🔀 Builds — Claude's PRs awaiting you <span class="dim" id="bCount"></span><span class="spacer"></span><span class="dim" id="bChev">show ▾</span></div>
+    <div id="bBody" style="display:none"><div id="prList"></div></div>
+  </div>
+
   <div class="tabs" id="tabs"></div>
 
   <div class="main">
@@ -159,6 +179,20 @@
   <p class="foot">Boards keyed by domain · list lives in this browser · <a href="index.html">setup</a> · <a href="REVIEW-OS-PLAN.md">plan</a></p>
 </div>
 <div id="toast">Saved</div>
+<div id="pvModal">
+  <div class="pv-head">
+    <b id="pvTitle">Preview</b>
+    <select id="pvFile"></select>
+    <span class="spacer"></span>
+    <button class="mini ok" id="pvMerge">✓ Approve &amp; Merge</button>
+    <button class="mini danger" id="pvFlag">🚩 Flag</button>
+    <button class="mini" id="pvClose">✕ Close</button>
+  </div>
+  <div class="pv-cols">
+    <div class="pv-col"><div class="lbl2">BEFORE — live main</div><iframe id="pvBefore" sandbox="allow-same-origin"></iframe></div>
+    <div class="pv-col"><div class="lbl2 after">AFTER — Claude's build</div><iframe id="pvAfter" sandbox="allow-same-origin"></iframe></div>
+  </div>
+</div>
 
 <script src="config.js"></script>
 <script>
@@ -245,8 +279,9 @@
     return 'Pull the latest review notes for '+board+' — in ~/Documents/"Website review" run: node sync.mjs '+board+
       ' — then read reviews/'+board+'/feedback.md. Work the 🔧 FIX QUEUE first, following my per-note instructions; notes with a '+
       '🚩 flag_reason are RETRIES — the previous attempt was rejected for that reason, address it specifically and set flag_reason '+
-      'to null when you resolve. Propose fixes for untriaged OPEN notes but wait for my approval. SKIP ⏸ parked notes. Show me every '+
-      'proposed edit BEFORE changing files. After I approve and you apply, set notes resolved (short resolution, clear disposition) '+
+      'to null when you resolve. SKIP ⏸ parked notes. Build the fixes ON A BRANCH in the client repo (fix/<page>-<date>), then open '+
+      'a GitHub PR whose body includes "Board: '+board+'" and one "Fixes-note: <note id>" line per note. Do NOT merge — I approve '+
+      'in the dashboard Builds panel. After my merge, mark those notes resolved (short resolution, clear disposition + flag_reason) '+
       'in feedback.json and run: node sync.mjs '+board+' --push';
   }
   function copy(text, msg){
@@ -340,6 +375,155 @@
         });
     }).catch(function(e){ toast("Failed: "+(e.message||e)); });
   });
+
+  /* ---------- Builds: GitHub PRs (Build 4) ---------- */
+  var GHT_KEY = "wrdash:ghtoken";
+  function ghToken(){ try{ return localStorage.getItem(GHT_KEY)||""; }catch(e){ return ""; } }
+  $("#ghKeyBtn").addEventListener("click", function(){
+    var t = window.prompt("Paste your GitHub fine-grained token (stored only in THIS browser).\nType 'clear' to remove it.", ghToken()?"(saved — paste new to replace)":"");
+    if(t===null) return;
+    t = t.trim();
+    if(t==="clear"){ localStorage.removeItem(GHT_KEY); toast("Token cleared"); return; }
+    if(t && t.indexOf("(saved")!==0){ localStorage.setItem(GHT_KEY, t); toast("Token saved — Builds unlocked"); loadBuilds(); }
+  });
+  function gh(path, opts){
+    opts = opts||{};
+    return fetch("https://api.github.com"+path, {
+      method: opts.method||"GET",
+      headers: { "Accept": opts.raw ? "application/vnd.github.raw+json" : "application/vnd.github+json",
+                 "Authorization": "Bearer "+ghToken(), "X-GitHub-Api-Version": "2022-11-28" },
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    }).then(function(r){
+      if(!r.ok) return r.text().then(function(t){ throw new Error("GitHub "+r.status+" — "+t.slice(0,140)); });
+      return opts.raw ? r.text() : (r.status===204 ? null : r.json());
+    });
+  }
+  function clientRepos(){
+    return Promise.all(clientKeys().map(function(ck){
+      return api(ck, "/clients?client_key=eq."+encodeURIComponent(ck)+"&select=client_key,repo")
+        .then(function(rows){ return rows[0]&&rows[0].repo ? {ck:rows[0].client_key, repo:rows[0].repo} : null; })
+        .catch(function(){ return null; });
+    })).then(function(a){ return a.filter(Boolean); });
+  }
+  var BUILDS = [];
+  function loadBuilds(){
+    var list=$("#prList");
+    if(!ghToken()){
+      list.innerHTML="";
+      var r=el("div","pr-row");
+      r.appendChild(el("span","t","Connect GitHub to see Claude's PRs here"));
+      var b=el("button","mini primary","🔑 Add token");
+      b.addEventListener("click",function(){ $("#ghKeyBtn").click(); });
+      r.appendChild(b); list.appendChild(r);
+      $("#bCount").textContent=""; return;
+    }
+    clientRepos().then(function(repos){
+      return Promise.all(repos.map(function(r){
+        return gh("/repos/"+r.repo+"/pulls?state=open&per_page=20")
+          .then(function(prs){ return {ck:r.ck, repo:r.repo, prs:prs||[]}; })
+          .catch(function(e){ return {ck:r.ck, repo:r.repo, prs:[], error:e.message}; });
+      }));
+    }).then(function(res){ BUILDS=res; renderBuilds(); });
+  }
+  function prNotes(pr){   // convention: PR body carries "Board: <board>" + "Fixes-note: <uuid>" lines
+    var body = pr.body||"";
+    var board = (body.match(/Board:\s*(\S+)/i)||[])[1]||null;
+    var ids = []; var m, re=/Fixes-note:\s*([0-9a-f-]{36})/gi;
+    while((m=re.exec(body))) ids.push(m[1]);
+    return { board:board, ids:ids };
+  }
+  function renderBuilds(){
+    var list=$("#prList"); list.innerHTML="";
+    var total=0;
+    BUILDS.forEach(function(g){
+      if(g.error){ var er=el("div","pr-row"); er.appendChild(el("span","t",g.repo+" — "+g.error)); list.appendChild(er); return; }
+      g.prs.forEach(function(pr){
+        total++;
+        var row=el("div","pr-row");
+        row.appendChild(el("span","t","#"+pr.number+" · "+pr.title));
+        row.appendChild(el("span","br",pr.head.ref+" → "+pr.base.ref));
+        row.appendChild(el("span","dim2",ago(pr.updated_at)));
+        var pv=el("button","mini primary","👀 Preview"); pv.addEventListener("click",function(){ openPreview(g,pr); }); row.appendChild(pv);
+        var mg=el("button","mini ok","✓ Approve & Merge"); mg.addEventListener("click",function(){ mergePR(g,pr); }); row.appendChild(mg);
+        var fl=el("button","mini danger","🚩 Flag"); fl.addEventListener("click",function(){ flagPR(g,pr); }); row.appendChild(fl);
+        var gl=el("a","mini","↗"); gl.href=pr.html_url; gl.target="_blank"; gl.style.textDecoration="none"; row.appendChild(gl);
+        list.appendChild(row);
+      });
+    });
+    if(!total){ var e2=el("div","pr-row"); e2.appendChild(el("span","t","No open builds — queue notes with 🔧 Fix, then send the prompt to Claude.")); list.appendChild(e2); }
+    $("#bCount").textContent = total ? "("+total+")" : "";
+  }
+  $("#bpanelH").addEventListener("click",function(){
+    var b=$("#bBody"); var open=b.style.display!=="none";
+    b.style.display=open?"none":"block"; $("#bChev").textContent=open?"show ▾":"hide ▴";
+    if(!open) loadBuilds();
+  });
+  /* ----- preview modal ----- */
+  var PV = { g:null, pr:null, files:[] };
+  function openPreview(g, pr){
+    PV.g=g; PV.pr=pr;
+    $("#pvTitle").textContent = "#"+pr.number+" · "+pr.title;
+    $("#pvModal").classList.add("open");
+    gh("/repos/"+g.repo+"/pulls/"+pr.number+"/files?per_page=50").then(function(files){
+      PV.files = (files||[]).filter(function(f){ return /\.html?$/i.test(f.filename) && f.status!=="removed"; });
+      var sel=$("#pvFile"); sel.innerHTML="";
+      if(!PV.files.length){
+        $("#pvBefore").srcdoc = "<body style='font-family:sans-serif;padding:40px;color:#555'>No HTML files in this PR — open it on GitHub to see the raw diff.</body>";
+        $("#pvAfter").srcdoc = "<body></body>"; return;
+      }
+      PV.files.forEach(function(f,i){ var o=document.createElement("option"); o.value=i; o.textContent=f.filename; sel.appendChild(o); });
+      showFile(0);
+    }).catch(function(e){ toast("Preview failed: "+e.message); });
+  }
+  function showFile(i){
+    var f=PV.files[i]; if(!f) return;
+    $("#pvBefore").srcdoc="<body style='font-family:sans-serif;padding:40px;color:#888'>loading…</body>";
+    $("#pvAfter").srcdoc="<body style='font-family:sans-serif;padding:40px;color:#888'>loading…</body>";
+    var repo=PV.g.repo, pr=PV.pr, path=encodeURIComponent(f.filename).replace(/%2F/g,"/");
+    gh("/repos/"+repo+"/contents/"+path+"?ref="+pr.base.sha,{raw:true})
+      .then(function(html){ $("#pvBefore").srcdoc=html; })
+      .catch(function(){ $("#pvBefore").srcdoc="<body style='font-family:sans-serif;padding:40px;color:#555'>new file — nothing on main yet</body>"; });
+    gh("/repos/"+repo+"/contents/"+path+"?ref="+pr.head.sha,{raw:true})
+      .then(function(html){ $("#pvAfter").srcdoc=html; })
+      .catch(function(e){ $("#pvAfter").srcdoc="<body style='font-family:sans-serif;padding:40px;color:#c00'>couldn't load: "+e.message+"</body>"; });
+  }
+  $("#pvFile").addEventListener("change",function(){ showFile(+this.value); });
+  $("#pvClose").addEventListener("click",function(){ $("#pvModal").classList.remove("open"); });
+  $("#pvMerge").addEventListener("click",function(){ if(PV.g) mergePR(PV.g,PV.pr); });
+  $("#pvFlag").addEventListener("click",function(){ if(PV.g) flagPR(PV.g,PV.pr); });
+  /* ----- merge + flag ----- */
+  function mergePR(g, pr){
+    if(!confirm("Approve & merge #"+pr.number+" — \""+pr.title+"\"?")) return;
+    gh("/repos/"+g.repo+"/pulls/"+pr.number+"/merge",{method:"PUT",body:{merge_method:"squash"}})
+      .then(function(){
+        toast("Merged ✓");
+        $("#pvModal").classList.remove("open");
+        // hand the built HTML over for the GHL paste (kept until Phase-4 loader on client domains)
+        var f = PV.pr===pr && PV.files.length ? PV.files[0] : null;
+        var after = f ? gh("/repos/"+g.repo+"/contents/"+encodeURIComponent(f.filename).replace(/%2F/g,"/")+"?ref="+pr.base.ref,{raw:true}) : Promise.resolve(null);
+        after.then(function(html){
+          if(html){ copy(html,"Built HTML copied"); alert("Merged ✓\n\nThe built page HTML is on your clipboard.\n\nShip it:\n1. GHL → the funnel page → its custom-code block\n2. Select all, paste, Save\n3. Publish\n4. Open the live page once to check\n\nThen tell Claude to mark the notes resolved + push."); }
+          loadBuilds(); load();
+        }).catch(function(){ loadBuilds(); load(); });
+      })
+      .catch(function(e){ toast("Merge failed: "+e.message); });
+  }
+  function flagPR(g, pr){
+    var reason = window.prompt("What's wrong? (required — the retry build gets this)", "");
+    if(reason===null || !reason.trim()) return;
+    reason = reason.trim();
+    var meta = prNotes(pr);
+    var requeue = Promise.resolve();
+    if(meta.board && meta.ids.length){
+      requeue = Promise.all(meta.ids.map(function(id){
+        return fetch(REST+"/notes?id=eq."+id,{method:"PATCH",headers:Object.assign(hdr(meta.board),{Prefer:"return=minimal"}),
+          body:JSON.stringify({status:"open",disposition:"fix",flag_reason:reason,updated_by:"Yonatan"})}).catch(function(){});
+      }));
+    }
+    requeue.then(function(){ return gh("/repos/"+g.repo+"/pulls/"+pr.number,{method:"PATCH",body:{state:"closed"}}); })
+      .then(function(){ toast("Flagged — PR closed, notes re-queued for retry"); $("#pvModal").classList.remove("open"); loadBuilds(); load(); })
+      .catch(function(e){ toast("Flag failed: "+e.message); });
+  }
 
   /* ---------- render: tabs ---------- */
   function renderTabs(){
@@ -533,6 +717,7 @@
   setInterval(function(){ if(!document.hidden) load(); }, 12000);   // the live loop — no manual refresh
   load();
   loadDeliv();
+  loadBuilds();
 })();
 </script>
 </body>
