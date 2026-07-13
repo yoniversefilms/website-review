@@ -40,6 +40,14 @@ See **[PLAN.md](PLAN.md)** for the full design and rationale.
    every new note (email with a click-to-review link). Enable `pg_net` first and paste
    your webhook URL into the file.
 
+## Client portal
+
+`portal.html?c=<client_key>` — the client's home for everything under review. Password
+**pds** (case-insensitive; a courtesy gate, not security — it lives in client-side JS),
+remembered per device after the first login. Lists their non-archived deliverables with
+one **Review →** button each. Copy a client's portal link from the dashboard's
+Deliverables panel (🔗 button).
+
 ## Owner vs client
 
 Open any review link once with **`&owner=1`** to mark that browser as owner (triage UI:

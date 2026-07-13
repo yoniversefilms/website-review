@@ -143,6 +143,7 @@
         <button class="mini" id="dPick">📎 file</button>
         <input type="text" id="dSrc" placeholder="…or paste a URL" style="min-width:140px" />
         <button class="mini primary" id="dAdd">Add</button>
+        <button class="mini" id="dPortal">🔗 client portal link</button>
       </div>
       <div id="dlList"></div>
     </div>
@@ -305,6 +306,11 @@
     var b=$("#dBody"); var open=b.style.display!=="none";
     b.style.display=open?"none":"block"; $("#dChev").textContent=open?"show ▾":"hide ▴";
     if(!open) loadDeliv();
+  });
+  $("#dPortal").addEventListener("click",function(){
+    var ck=$("#dClient").value; if(!ck){ toast("Pick a client"); return; }
+    copy(location.origin + location.pathname.replace(/[^/]*$/,"") + "portal.html?c=" + encodeURIComponent(ck),
+         "Portal link copied — password: pds");
   });
   var dPicked=null;
   $("#dPick").addEventListener("click",function(){ $("#dFile").click(); });
