@@ -661,21 +661,32 @@
   /* ---------------- photos ---------------- */
   function pubURL(p) { return CFG.supabaseUrl.replace(/\/$/, "") + "/storage/v1/object/public/review-photos/" + p; }
   function attsOf(id) { return atts.filter(function (a) { return a.note_id === id; }); }
-  // Re-encode to JPEG (max 2000px) when the file is big or an exotic camera format
-  // (e.g. HEIC on Safari); small web-friendly images pass through untouched.
+  // FULL-QUALITY policy: originals upload UNTOUCHED — they are the masters
+  // (web/print derivatives get generated later, at build time). Conversion
+  // happens only when technically forced — a format the bucket can't store
+  // (e.g. HEIC) or the 10MB cap — and then at FULL resolution, never downscaled.
   function prepPhoto(file) {
     var okType = /^image\/(png|jpe?g|webp|gif)$/i.test(file.type);
-    if (okType && file.size <= 1500000) {
+    var LIMIT = 10485760;
+    if (okType && file.size <= LIMIT) {
       return Promise.resolve({ blob: file, ext: (file.type.split("/")[1] || "jpg").replace("jpeg", "jpg"), mime: file.type });
     }
     return new Promise(function (res, rej) {
       var img = new Image(), u = URL.createObjectURL(file);
       img.onload = function () {
-        var MAX = 2000, w = img.naturalWidth, h = img.naturalHeight, s = Math.min(1, MAX / Math.max(w, h, 1));
-        var c = document.createElement("canvas"); c.width = Math.round(w * s) || 1; c.height = Math.round(h * s) || 1;
-        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        var c = document.createElement("canvas");
+        c.width = img.naturalWidth || 1; c.height = img.naturalHeight || 1;   // full resolution
+        c.getContext("2d").drawImage(img, 0, 0);
         URL.revokeObjectURL(u);
-        c.toBlob(function (b) { b ? res({ blob: b, ext: "jpg", mime: "image/jpeg" }) : rej(new Error("couldn't encode image")); }, "image/jpeg", 0.85);
+        function attempt(q, nextQ) {
+          c.toBlob(function (b) {
+            if (!b) return rej(new Error("couldn't encode image"));
+            if (b.size <= LIMIT) return res({ blob: b, ext: "jpg", mime: "image/jpeg" });
+            if (nextQ) return attempt(nextQ, null);
+            rej(new Error("photo over 10 MB even at full-res JPEG — send it another way"));
+          }, "image/jpeg", q);
+        }
+        attempt(0.92, 0.8);
       };
       img.onerror = function () { URL.revokeObjectURL(u); rej(new Error("couldn't read this image format")); };
       img.src = u;
