@@ -5,6 +5,10 @@
     "ruth": {
       "board": "ruthpedida.co.il",
       "out": "/Users/yonatanresnick/Documents/Ruth/Website/reviews/ruth"
+    },
+    "lovedust": {
+      "board": "lovedustfilms.com",
+      "out": "/Users/yonatanresnick/Documents/pixeldust-lovedust/reviews/lovedustfilms.com"
     }
   }
 }
