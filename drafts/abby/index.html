@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Client-review draft. Injected by abby-site/publish-draft.sh — not in the source file. -->
+<meta name="robots" content="noindex,nofollow" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Abby Resnick Floral Design — Events, Weddings &amp; Corporate · Los Angeles</title>
+<script>document.documentElement.classList.add('js')</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* =========================================================================
+   ABBY RESNICK FLORAL DESIGN — Homepage preview
+   Each <section> below maps 1:1 to a Shopify Liquid section (noted in comments).
+   Design tokens here become {% schema %} settings + CSS variables in the theme.
+   ========================================================================= */
+
+:root{
+  --cream:#F5EFE2;
+  --cream-2:#ECE3D2;
+  --paper:#FBF7EE;
+  --ink:#3A2A30;
+  --ink-soft:#76675F;
+  --mauve:#5A2A42;          /* primary = deep plum (brand) */
+  --plum:#5A2A42;
+  --rose:#C07E8C;
+  --rose-soft:#E7C9CC;
+  --lavender:#B9A7D0;       /* signature accent */
+  --lavender-soft:#ECE6F4;
+  --gold:#B0895A;           /* champagne, deepened for legibility */
+  --green:#7E8A6B;
+  --max:1280px;
+  --pad:clamp(22px,5vw,80px);
+  --serif:'Cormorant Garamond',Georgia,serif;
+  --sans:'Jost',-apple-system,Segoe UI,sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--cream);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-weight:300;
+  font-size:17px;
+  line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+img{display:block;max-width:100%;height:auto}
+a{color:inherit;text-decoration:none}
+
+.wrap{max-width:var(--max);margin:0 auto;padding-left:var(--pad);padding-right:var(--pad)}
+
+/* ---- shared type ---- */
+.eyebrow{
+  font-family:var(--sans);
+  font-weight:500;
+  font-size:.72rem;
+  letter-spacing:.34em;
+  text-transform:uppercase;
+  color:var(--gold);
+}
+h1,h2,h3{font-family:var(--serif);font-weight:500;line-height:1.06;letter-spacing:-.01em;color:var(--mauve)}
+h2{font-size:clamp(2rem,4.2vw,3.4rem)}
+h3{font-size:clamp(1.4rem,2.2vw,1.9rem)}
+.lead{font-size:1.12rem;color:var(--ink-soft);max-width:46ch}
+em,.italic{font-style:italic;font-family:var(--serif)}
+
+/* ---- buttons ---- */
+.btn{
+  display:inline-block;
+  font-family:var(--sans);
+  font-weight:500;
+  font-size:.74rem;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  padding:16px 30px;
+  border:1px solid var(--mauve);
+  background:var(--mauve);
+  color:var(--cream);
+  cursor:pointer;
+  transition:.35s ease;
+}
+.btn:hover{background:var(--ink);border-color:var(--ink)}
+.btn--ghost{background:transparent;color:var(--ink);border-color:var(--ink)}
+.btn--ghost:hover{background:var(--ink);color:var(--cream)}
+.btn--light{background:transparent;color:#fff;border-color:rgba(255,255,255,.7)}
+.btn--light:hover{background:#fff;color:var(--ink);border-color:#fff}
+
+.link-underline{
+  font-family:var(--sans);font-weight:500;font-size:.74rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--mauve);display:inline-block;
+  padding-bottom:4px;border-bottom:1px solid var(--lavender);transition:.3s;
+}
+.link-underline:hover{border-color:var(--mauve);color:var(--ink)}
+
+/* reveal (no-JS safe: only hides when .js present) */
+.js .reveal{opacity:0;transform:translateY(26px);transition:opacity 1s ease,transform 1s ease}
+.js .reveal.in{opacity:1;transform:none}
+
+/* =========================================================================
+   SECTION: announcement-bar  →  sections/announcement-bar.liquid
+   ========================================================================= */
+.announce{
+  background:var(--ink);color:var(--cream);
+  font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;
+  text-align:center;padding:11px 16px;font-weight:400;
+}
+.announce span{opacity:.55;margin:0 12px}
+
+/* =========================================================================
+   SECTION: header  →  sections/header.liquid (Shopify header group)
+   ========================================================================= */
+.site-header{position:sticky;top:0;z-index:50;background:rgba(246,239,228,.86);backdrop-filter:blur(10px);border-bottom:1px solid rgba(178,150,94,.25)}
+.nav{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding-top:20px;padding-bottom:20px}
+.nav__links{display:flex;gap:30px;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;font-weight:400}
+.nav__links a{color:var(--ink-soft);transition:.3s;position:relative}
+.nav__links a:hover{color:var(--mauve)}
+.nav__links--right{justify-content:flex-end}
+.brand{
+  text-align:center;font-family:var(--serif);font-weight:500;
+  font-size:1.5rem;letter-spacing:.02em;line-height:1;color:var(--mauve);
+}
+.brand small{display:block;font-family:var(--sans);font-weight:400;font-size:.54rem;letter-spacing:.4em;text-transform:uppercase;color:var(--mauve);margin-top:5px}
+.brand small .dot,.mobile-menu__brand small .dot{color:var(--gold)}
+.footer .brand,.footer .brand small{color:var(--cream)}
+.brand-logo{height:58px;width:auto;display:block;margin:0 auto}
+.footer .brand{text-align:left}
+.brand-logo--footer{height:50px;margin:0 0 10px}
+@media(max-width:560px){.brand-logo{height:44px}}
+
+/* hamburger toggle — hidden on desktop, shown on mobile */
+.nav__toggle{display:none;flex-direction:column;justify-content:center;gap:5px;width:26px;height:24px;padding:0;background:none;border:0;cursor:pointer}
+.nav__toggle span{display:block;height:1.5px;width:100%;background:var(--ink);transition:.3s ease}
+
+/* full-screen mobile menu overlay */
+.mobile-menu{position:fixed;inset:0;z-index:100;background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;opacity:0;visibility:hidden;transform:translateY(-10px);transition:opacity .4s ease,transform .4s ease,visibility .4s}
+.mobile-menu.open{opacity:1;visibility:visible;transform:none}
+.mobile-menu__close{position:absolute;top:18px;right:var(--pad);background:none;border:0;font-size:2.4rem;line-height:1;color:var(--ink);cursor:pointer;font-family:var(--sans);font-weight:300}
+.mobile-menu__brand{font-family:var(--serif);font-size:1.5rem;color:var(--mauve);text-align:center;margin-bottom:18px}
+.mobile-menu__brand small{display:block;font-family:var(--sans);font-size:.54rem;letter-spacing:.4em;text-transform:uppercase;color:var(--mauve);margin-top:5px}
+.mobile-menu__links{display:flex;flex-direction:column;align-items:center;gap:14px}
+.mobile-menu__links a{font-family:var(--serif);font-size:1.9rem;color:var(--ink);transition:.3s}
+.mobile-menu__links a:hover{color:var(--mauve)}
+
+/* =========================================================================
+   SECTION: hero  →  sections/hero.liquid
+   ========================================================================= */
+.hero{position:relative;min-height:92vh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden}
+.hero__bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero__bg img{position:absolute;left:0;width:100%;top:-9%;height:118%;object-fit:cover;object-position:center 62%;will-change:transform}
+.hero__scrim{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(40,29,27,.46) 0%,rgba(40,29,27,.26) 38%,rgba(40,29,27,.58) 100%)}
+.hero__inner{position:relative;z-index:2;max-width:820px;padding:96px var(--pad)}
+.hero__inner .eyebrow{display:block;margin-bottom:24px;color:rgba(246,239,228,.92)}
+.hero h1{color:#FBF8F1;font-size:clamp(2.9rem,6vw,5.4rem);margin-bottom:24px;text-shadow:0 2px 34px rgba(0,0,0,.30)}
+.hero h1 em{color:var(--lavender)}
+.hero__sub{max-width:48ch;margin:0 auto 38px;color:rgba(251,248,241,.94);font-size:1.12rem;text-shadow:0 1px 18px rgba(0,0,0,.34)}
+.hero__cta{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.btn--cream{background:var(--cream);border-color:var(--cream);color:var(--ink)}
+.btn--cream:hover{background:#fff;border-color:#fff;color:var(--ink)}
+
+/* =========================================================================
+   SECTION: marquee  →  sections/marquee.liquid
+   ========================================================================= */
+.marquee{background:var(--cream-2);border-top:1px solid rgba(178,150,94,.3);border-bottom:1px solid rgba(178,150,94,.3);overflow:hidden;padding:20px 0}
+.marquee__track{display:flex;gap:0;white-space:nowrap;width:max-content;animation:scroll 34s linear infinite}
+.marquee__track span{font-family:var(--serif);font-style:italic;font-size:1.55rem;color:var(--mauve);padding:0 34px}
+.marquee__track span::after{content:'\2767';color:var(--gold);font-style:normal;margin-left:34px;font-size:1rem;vertical-align:middle}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* =========================================================================
+   SECTION: featured-collection  →  sections/featured-collection.liquid
+   ========================================================================= */
+.section{padding:clamp(70px,9vw,130px) 0}
+.section__head{text-align:center;max-width:640px;margin:0 auto clamp(40px,5vw,68px)}
+.section__head .eyebrow{display:block;margin-bottom:18px}
+.section__head p{color:var(--ink-soft);margin-top:16px}
+
+.products{display:grid;grid-template-columns:repeat(4,1fr);gap:26px}
+.card{background:var(--paper);text-align:center}
+.card__img{position:relative;overflow:hidden;aspect-ratio:4/5;background:var(--cream-2)}
+.card__img img{width:100%;height:100%;object-fit:cover;transition:transform 1.1s cubic-bezier(.2,.8,.2,1)}
+.card:hover .card__img img{transform:scale(1.06)}
+.card__add{
+  position:absolute;left:50%;bottom:16px;translate:-50% 12px;
+  opacity:0;transition:.4s ease;background:var(--cream);color:var(--ink);
+  font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;padding:11px 22px;font-weight:500;cursor:pointer;
+}
+.card:hover .card__add{opacity:1;translate:-50% 0}
+.card__body{padding:22px 16px 30px}
+.card__name{font-family:var(--serif);font-size:1.42rem;color:var(--ink);margin-bottom:4px}
+.card__price{color:var(--mauve);font-size:.92rem;letter-spacing:.04em}
+.center-cta{text-align:center;margin-top:56px}
+
+/* =========================================================================
+   SECTION: editorial-split  →  sections/editorial-split.liquid  (Meet Abby)
+   ========================================================================= */
+.split{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:clamp(30px,6vw,90px)}
+.split--alt{background:var(--cream-2)}
+.split__media{aspect-ratio:4/5;overflow:hidden;background:var(--cream)}
+.split__media img{width:100%;height:100%;object-fit:cover}
+.split__body .eyebrow{display:block;margin-bottom:20px}
+.split__body h2{margin-bottom:24px}
+.split__body p{color:var(--ink-soft);margin-bottom:18px;max-width:48ch}
+.split__sig{font-family:var(--serif);font-style:italic;font-size:1.7rem;color:var(--mauve);margin-top:8px}
+
+/* =========================================================================
+   SECTION: services  →  sections/services.liquid
+   ========================================================================= */
+.services{display:grid;grid-template-columns:repeat(3,1fr);gap:30px}
+.service{text-align:center}
+.service__img{aspect-ratio:3/4;overflow:hidden;margin-bottom:24px;background:var(--cream-2)}
+.service__img img{width:100%;height:100%;object-fit:cover;transition:transform 1.1s cubic-bezier(.2,.8,.2,1)}
+.service:hover .service__img img{transform:scale(1.05)}
+.service h3{margin-bottom:12px}
+.service p{color:var(--ink-soft);font-size:.98rem;margin-bottom:18px;padding:0 6px}
+
+/* =========================================================================
+   SECTION: lookbook-gallery  →  sections/lookbook-gallery.liquid
+   ========================================================================= */
+.gallery{display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:200px;gap:14px}
+.gallery a{overflow:hidden;background:var(--cream-2);display:block}
+.gallery img{width:100%;height:100%;object-fit:cover;transition:transform 1.2s cubic-bezier(.2,.8,.2,1)}
+.gallery a:hover img{transform:scale(1.07)}
+.g-a{grid-column:span 2;grid-row:span 2}
+.g-b{grid-column:span 2;grid-row:span 1}
+.g-c{grid-column:span 2;grid-row:span 1}
+.g-d{grid-column:span 2;grid-row:span 1}
+.g-e{grid-column:span 2;grid-row:span 1}
+.g-f{grid-column:span 2;grid-row:span 2}
+.g-g{grid-column:span 2;grid-row:span 1}
+.g-h{grid-column:span 2;grid-row:span 1}
+
+/* =========================================================================
+   SECTION: testimonial  →  sections/testimonial.liquid
+   ========================================================================= */
+.quote{background:var(--lavender-soft);color:var(--mauve);text-align:center}
+.quote .wrap{padding-top:clamp(70px,9vw,120px);padding-bottom:clamp(70px,9vw,120px)}
+.quote__mark{font-family:var(--serif);font-size:4rem;line-height:.4;color:var(--lavender);opacity:.9}
+.quote blockquote{font-family:var(--serif);font-size:clamp(1.6rem,3.2vw,2.5rem);font-weight:500;line-height:1.32;max-width:18ch;margin:24px auto 28px}
+.quote cite{font-style:normal;font-family:var(--sans);font-size:.72rem;letter-spacing:.24em;text-transform:uppercase;color:var(--mauve);opacity:.7}
+
+/* =========================================================================
+   SECTION: inquiry-cta  →  sections/inquiry-cta.liquid
+   ========================================================================= */
+.cta{position:relative;color:#fff;text-align:center;overflow:hidden}
+.cta__bg{position:absolute;inset:0}
+.cta__bg img{width:100%;height:100%;object-fit:cover}
+.cta__scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(63,51,46,.42),rgba(63,51,46,.62))}
+.cta .wrap{position:relative;padding-top:clamp(90px,12vw,160px);padding-bottom:clamp(90px,12vw,160px)}
+.cta .eyebrow{color:var(--rose-soft);display:block;margin-bottom:20px}
+.cta h2{color:#fff;margin-bottom:22px}
+.cta p{color:rgba(255,255,255,.86);max-width:42ch;margin:0 auto 34px}
+
+/* =========================================================================
+   SECTION: inquiry-form  →  sections/inquiry-form.liquid
+   The single destination for every CTA on the page.
+   ========================================================================= */
+.inquire{background:var(--cream-2)}
+.inquire .wrap{padding-top:clamp(70px,9vw,120px);padding-bottom:clamp(70px,9vw,120px)}
+.inquire__grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:clamp(34px,5vw,72px);align-items:start}
+.inquire__intro .eyebrow{display:block;margin-bottom:18px}
+.inquire__intro h2{margin-bottom:20px}
+.inquire__intro p{margin-bottom:18px}
+.inquire__note{font-size:.82rem;color:var(--ink-soft);border-left:2px solid var(--lavender);padding-left:16px;margin-top:26px}
+.inquire__form{background:var(--paper);border:1px solid rgba(176,137,90,.24);padding:clamp(26px,3.4vw,44px)}
+.form__row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.field{display:flex;flex-direction:column;margin-bottom:18px}
+.field label{font-family:var(--sans);font-weight:500;font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px}
+.field .opt{text-transform:none;letter-spacing:0;opacity:.65}
+.field input,.field select,.field textarea{font-family:var(--sans);font-weight:300;font-size:1rem;color:var(--ink);background:var(--cream);border:1px solid rgba(176,137,90,.35);padding:13px 14px;outline:none;transition:.25s ease;border-radius:0;width:100%;box-sizing:border-box}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--mauve);background:#fff}
+.field textarea{resize:vertical;min-height:120px}
+.field select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%235A2A42' stroke-width='1.4'/></svg>");background-repeat:no-repeat;background-position:right 14px center;padding-right:34px}
+.inquire__form .btn{width:100%;text-align:center;margin-top:6px}
+.form__success{display:none;text-align:center;padding:26px 10px}
+.form__success h3{margin-bottom:10px}
+.form__success p{color:var(--ink-soft)}
+.inquire__form.is-sent .form__success{display:block}
+.inquire__form.is-sent form{display:none}
+@media (max-width:900px){
+  .inquire__grid{grid-template-columns:1fr;gap:32px}
+  .form__row{grid-template-columns:1fr;gap:0}
+}
+
+/* =========================================================================
+   SECTION: footer  →  sections/footer.liquid (Shopify footer group)
+   ========================================================================= */
+.footer{background:var(--ink);color:var(--cream);padding-top:80px}
+.footer__top{display:grid;grid-template-columns:1.4fr 1fr 1fr 1.3fr;gap:40px;padding-bottom:60px}
+.footer__brand{font-family:var(--serif);font-size:1.8rem;line-height:1.05;margin-bottom:16px}
+.footer__brand small{display:block;font-family:var(--sans);font-size:.56rem;letter-spacing:.4em;text-transform:uppercase;color:var(--gold);margin-top:8px}
+.footer p,.footer li{color:rgba(246,239,228,.66);font-size:.92rem;line-height:1.9}
+.footer h4{font-family:var(--sans);font-weight:500;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--rose-soft);margin-bottom:18px}
+.footer ul{list-style:none}
+.footer a:hover{color:var(--cream)}
+.subscribe{display:flex;border:1px solid rgba(246,239,228,.28);margin-top:14px}
+.subscribe input{flex:1;background:transparent;border:0;color:var(--cream);padding:13px 14px;font-family:var(--sans);font-size:.82rem;outline:none}
+.subscribe input::placeholder{color:rgba(246,239,228,.5)}
+.subscribe button{background:var(--rose);color:#fff;border:0;padding:0 20px;font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:.3s}
+.subscribe button:hover{background:var(--cream);color:var(--ink)}
+.footer__bottom{border-top:1px solid rgba(246,239,228,.16);padding:24px 0;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:.72rem;letter-spacing:.1em;color:rgba(246,239,228,.5);text-transform:uppercase}
+
+/* =========================================================================
+   Responsive
+   ========================================================================= */
+@media (max-width:900px){
+  .hero{min-height:84vh}
+  .products{grid-template-columns:repeat(2,1fr)}
+  .split{grid-template-columns:1fr}
+  .split__media{order:-1;aspect-ratio:4/3}
+  .services{grid-template-columns:1fr}
+  .service__img{aspect-ratio:16/10}
+  .gallery{grid-template-columns:repeat(2,1fr);grid-auto-rows:46vw;gap:10px}
+  .gallery a{grid-column:span 1;grid-row:span 1}
+  .nav{display:flex;justify-content:center;position:relative}
+  .nav__links{display:none}
+  .nav__toggle{display:flex;position:absolute;left:var(--pad);top:50%;transform:translateY(-50%)}
+  .footer__top{grid-template-columns:1fr 1fr}
+}
+@media (max-width:560px){
+  .footer__top{grid-template-columns:1fr}
+  .gallery{grid-auto-rows:44vw}
+  .announce{font-size:.6rem;letter-spacing:.1em;padding:9px 14px;line-height:1.6}
+  .card__name{font-size:1.25rem}
+}
+</style>
+</head>
+<body>
+<style>
+/* ==== Announce bar ==== */
+.announce{
+  background:var(--mauve);
+  color:var(--cream);
+  font-family:var(--sans);
+  font-size:.72rem;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  text-align:center;
+  padding:.6rem var(--pad);
+}
+.announce .dot{color:var(--gold);margin:0 .5rem;opacity:.85}
+
+/* ==== Corporate nav item — secondary to weddings (de-emphasized) ==== */
+.nav__corp{color:var(--ink-soft)}
+.nav__corp:hover{color:var(--mauve)}
+.mobile-menu__links .is-corp{color:var(--ink)}
+
+/* ==== Selected work strip ==== */
+.strip{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+}
+.strip a{
+  display:block;
+  overflow:hidden;
+  aspect-ratio:4/5;
+  border-radius:2px;
+}
+.strip img{
+  width:100%;height:100%;
+  object-fit:cover;
+  display:block;
+  transition:transform .9s ease;
+}
+.strip a:hover img{transform:scale(1.05)}
+
+/* ==== Corporate teaser band ==== */
+.corp-band{background:var(--cream-2)}
+.corp-band .wrap{
+  display:grid;
+  grid-template-columns:.95fr 1.05fr;
+  align-items:stretch;
+  gap:0;
+  overflow:hidden;
+  border-radius:3px;
+}
+.corp-band__media{position:relative;min-height:420px}
+.corp-band__media img{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:cover;display:block;
+}
+.corp-band__body{
+  background:var(--mauve);
+  color:var(--cream);
+  padding:clamp(2.5rem,5vw,4.5rem);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.corp-band__body .eyebrow{color:var(--gold)}
+.corp-band__body h2{color:var(--cream);margin:.4rem 0 1rem}
+.corp-band__body p{
+  color:var(--cream);
+  opacity:.82;
+  max-width:46ch;
+  margin-bottom:1.8rem;
+}
+.corp-band .link-underline{color:var(--rose-soft);border-color:var(--rose-soft)}
+
+@media(max-width:900px){
+  .strip{grid-template-columns:repeat(2,1fr)}
+  .corp-band .wrap{grid-template-columns:1fr}
+  .corp-band__media{min-height:300px;order:-1}
+}
+@media(max-width:560px){
+  .strip{grid-template-columns:1fr 1fr;gap:10px}
+  .announce{font-size:.64rem;letter-spacing:.12em}
+  .announce .dot{margin:0 .35rem}
+}
+</style>
+
+<!-- 1) ANNOUNCE BAR -->
+<div class="announce">
+  Now booking 2026 / 2027 weddings &amp; events
+  <span class="dot">&bull;</span>
+  Private celebrations
+  <span class="dot">&bull;</span>
+  Corporate &amp; brand events
+</div>
+
+<!-- 2) HEADER -->
+<header class="site-header">
+  <div class="wrap nav">
+    <nav class="nav__links" aria-label="Primary">
+      <a href="#services">Weddings</a>
+      <a href="#services">Private Events</a>
+      <a href="#services">Installations</a>
+    </nav>
+
+    <a href="./" class="brand" aria-label="Abby Resnick — Floral Design, Los Angeles">
+      <img class="brand-logo" src="assets/brand/logo.svg" alt="Abby Resnick — Floral Design, Los Angeles">
+    </a>
+
+    <nav class="nav__links nav__links--right" aria-label="Secondary">
+      <a href="#work">Portfolio</a>
+      <a href="#studio">About</a>
+      <a href="#corporate" class="nav__corp">Corporate</a>
+      <a href="#inquire">Inquire</a>
+    </nav>
+
+    <button class="nav__toggle" aria-label="Open menu" aria-controls="mobileMenu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<!-- MOBILE MENU OVERLAY -->
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-menu__close" aria-label="Close menu">&times;</button>
+  <a href="./" class="mobile-menu__brand">
+    Abby Resnick
+    <small>Floral Design <span class="dot">&middot;</span> Los Angeles</small>
+  </a>
+  <nav class="mobile-menu__links" aria-label="Mobile">
+    <a href="#services">Weddings</a>
+    <a href="#services">Private Events</a>
+    <a href="#services">Installations</a>
+    <a href="#work">Portfolio</a>
+    <a href="#studio">About</a>
+    <a href="#corporate" class="is-corp">Corporate</a>
+    <a href="#inquire">Inquire</a>
+  </nav>
+</div>
+
+<!-- 3) HERO -->
+<section class="hero">
+  <div class="hero__bg"><img src="assets/events/hero-sunset.jpg" alt="A candlelit hillside dinner table at sunset, styled with autumn florals and string lights"></div>
+  <div class="hero__scrim"></div>
+  <div class="hero__inner">
+    <p class="eyebrow">Los Angeles Floral &amp; Event Design</p>
+    <h1>Flowers for the moments you'll <em>remember</em></h1>
+    <p class="hero__sub">Weddings, private celebrations, and brand events &mdash; gathered like a garden and styled by hand, room by room.</p>
+    <div class="hero__cta">
+      <a href="#inquire" class="btn btn--cream">Inquire</a>
+      <a href="#work" class="btn btn--light">View Portfolio</a>
+    </div>
+  </div>
+</section>
+
+<!-- 4) MARQUEE -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee__track">
+    <span><em>Weddings</em></span>
+    <span><em>Anniversaries</em></span>
+    <span><em>Engagements</em></span>
+    <span><em>Private Dinners</em></span>
+    <span><em>Corporate</em></span>
+    <span><em>Brand Activations</em></span>
+    <span><em>Installations</em></span>
+    <span><em>Weddings</em></span>
+    <span><em>Anniversaries</em></span>
+    <span><em>Engagements</em></span>
+    <span><em>Private Dinners</em></span>
+    <span><em>Corporate</em></span>
+    <span><em>Brand Activations</em></span>
+    <span><em>Installations</em></span>
+  </div>
+</div>
+
+<!-- 5) VERTICALS -->
+<style>
+/* Weddings & Private Events — featured forefront */
+.verticals-feature{display:grid;grid-template-columns:1fr 1fr;gap:clamp(26px,4vw,48px)}
+.verticals-feature .service__img{aspect-ratio:4/5}
+.verticals-feature h3{font-size:clamp(1.7rem,2.8vw,2.3rem);margin-top:22px}
+.verticals-feature .service p{font-size:1.05rem;max-width:42ch;margin:10px auto 16px}
+/* Installations — secondary wide card */
+.vertical-wide{display:grid;grid-template-columns:1fr 1.05fr;align-items:center;margin-top:clamp(36px,5vw,64px);background:var(--cream-2);overflow:hidden}
+.vertical-wide__img{aspect-ratio:16/11;overflow:hidden}
+.vertical-wide__img img{width:100%;height:100%;object-fit:cover;transition:transform 1.1s cubic-bezier(.2,.8,.2,1)}
+.vertical-wide:hover .vertical-wide__img img{transform:scale(1.05)}
+.vertical-wide__body{padding:clamp(26px,4vw,52px)}
+.vertical-wide__body .eyebrow{display:block;margin-bottom:12px}
+.vertical-wide__body h3{margin-bottom:12px}
+.vertical-wide__body p{color:var(--ink-soft);max-width:46ch;margin-bottom:16px}
+/* Corporate — quiet secondary strip */
+.corp-strip{background:var(--lavender-soft);text-align:center}
+.corp-strip .wrap{padding-top:clamp(34px,4vw,48px);padding-bottom:clamp(34px,4vw,48px);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 22px}
+.corp-strip .eyebrow{color:var(--gold)}
+.corp-strip p{color:var(--mauve);font-family:var(--serif);font-size:clamp(1.15rem,2vw,1.5rem);margin:0}
+@media(max-width:760px){
+  .verticals-feature{grid-template-columns:1fr;gap:34px}
+  .vertical-wide{grid-template-columns:1fr}
+}
+</style>
+
+<section class="section" id="services">
+  <div class="wrap">
+    <div class="section__head reveal">
+      <p class="eyebrow">What We Create</p>
+      <h2>Designed around the <em>occasion</em></h2>
+      <p>Every event asks for its own language of flowers. We shape each one from the ground up &mdash; the setting, the season, the feeling in the room.</p>
+    </div>
+
+    <div class="verticals-feature">
+      <article class="service reveal">
+        <div class="service__img"><img src="assets/events/card_weddings.jpg" alt="An elegant outdoor wedding reception table set with flowers"></div>
+        <h3>Weddings</h3>
+        <p>From the first look to the last table, a garden-gathered celebration designed entirely around the two of you.</p>
+      </article>
+
+      <article class="service reveal">
+        <div class="service__img"><img src="assets/events/card_private.jpg" alt="A vibrant private celebration tablescape with abundant flowers"></div>
+        <h3>Private Events</h3>
+        <p>Anniversaries, engagements, showers, and intimate dinners &mdash; styled like a moment meant to be lingered over.</p>
+      </article>
+    </div>
+
+    <div class="vertical-wide reveal">
+      <div class="vertical-wide__img"><img src="assets/events/card_install.jpg" alt="A large suspended floral installation overhead"></div>
+      <div class="vertical-wide__body">
+        <span class="eyebrow">Also</span>
+        <h3>Installations &amp; Activations</h3>
+        <p>Suspended ceilings of blooms, arched entryways, sculptural moments &mdash; statement pieces built for the space and the story.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6) SELECTED WORK -->
+<section class="section section--alt" id="work">
+  <div class="wrap">
+    <div class="section__head reveal">
+      <p class="eyebrow">Selected Work</p>
+      <h2>From the <em>studio</em></h2>
+      <p>A glimpse of recent tablescapes, ceremonies, and installations across Los Angeles.</p>
+    </div>
+
+    <div class="strip reveal">
+      <a href="#inquire"><img src="assets/events/g1.jpg" alt="Floral arrangement from a recent event"></a>
+      <a href="#inquire"><img src="assets/events/g2.jpg" alt="Styled event tablescape with flowers"></a>
+      <a href="#inquire"><img src="assets/events/g3.jpg" alt="Ceremony floral detail"></a>
+      <a href="#inquire"><img src="assets/events/g4.jpg" alt="Floral installation detail"></a>
+    </div>
+
+    <div class="center-cta reveal">
+      <a href="#inquire" class="btn btn--ghost">Start an Inquiry</a>
+    </div>
+  </div>
+</section>
+
+<!-- 7) STUDIO -->
+<section class="split split--alt" id="studio">
+  <div class="split__media">
+    <img src="assets/events/portrait.jpg" alt="Abby Resnick holding a freshly gathered bouquet">
+  </div>
+  <div class="split__body reveal">
+    <p class="eyebrow">The Studio</p>
+    <h2>A florist's hands, a <em>growing</em> studio</h2>
+    <p>Abby Resnick Floral Design began at a single worktable in Los Angeles, gathering flowers by hand for the people she knew. Today that table is a studio &mdash; a small, devoted team that brings the same intimate care to larger weddings, multi-day celebrations, and full-scale installations.</p>
+    <p>We design, source, build, and style on site, so every event arrives feeling considered down to the last stem &mdash; whether it's a quiet dinner for ten or a celebration for three hundred.</p>
+    <p class="split__sig">&mdash; Abby</p>
+    <a href="#inquire" class="link-underline">Start an inquiry &rarr;</a>
+  </div>
+</section>
+
+<!-- 8) CORPORATE TEASER BAND -->
+<section class="corp-strip" id="corporate">
+  <div class="wrap reveal">
+    <span class="eyebrow">For brands &amp; companies</span>
+    <p>We also design corporate &amp; brand events.</p>
+    <a href="#inquire" class="link-underline">Get in touch &rarr;</a>
+  </div>
+</section>
+
+<!-- 9) TESTIMONIAL -->
+<section class="quote">
+  <div class="wrap">
+    <span class="quote__mark">&ldquo;</span>
+    <blockquote>Abby read the room before we could describe it. Every table felt gathered that morning from a garden &mdash; our guests are still talking about the flowers.</blockquote>
+    <cite>Garden Wedding &middot; Ojai, California</cite>
+  </div>
+</section>
+
+<!-- 10) CLOSING CTA — the visual lead-in to the form directly below -->
+<section class="cta" id="inquire">
+  <img class="cta__bg" src="assets/events/g1.jpg" alt="Lush floral arrangement">
+  <div class="cta__scrim"></div>
+  <div class="wrap reveal">
+    <p class="eyebrow">Let's Create Together</p>
+    <h2>Planning something <em>beautiful</em>?</h2>
+    <p>Tell us about your event, your date, and the feeling you're after &mdash; we would love to hear it.</p>
+  </div>
+</section>
+
+<!-- 11) INQUIRY FORM — every CTA on this page lands here -->
+<section class="inquire">
+  <div class="wrap">
+    <div class="inquire__grid">
+      <div class="inquire__intro reveal">
+        <span class="eyebrow">Start an Inquiry</span>
+        <h2>Tell us about <em>your day</em></h2>
+        <p>A few details are all we need to begin. We read every inquiry ourselves and reply personally.</p>
+        <p>Not sure of your date, guest count, or budget yet? Send what you know &mdash; we will take it from there.</p>
+        <p class="inquire__note">Prefer email? Write to <a href="mailto:hello@abbyresnick.com" class="link-underline">hello@abbyresnick.com</a></p>
+      </div>
+
+      <div class="inquire__form reveal" id="inquireForm">
+        <form action="#" method="post" novalidate>
+          <div class="form__row">
+            <div class="field">
+              <label for="f-name">Your name</label>
+              <input type="text" id="f-name" name="name" autocomplete="name" required>
+            </div>
+            <div class="field">
+              <label for="f-email">Email</label>
+              <input type="email" id="f-email" name="email" autocomplete="email" required>
+            </div>
+          </div>
+
+          <div class="form__row">
+            <div class="field">
+              <label for="f-phone">Phone <span class="opt">(optional)</span></label>
+              <input type="tel" id="f-phone" name="phone" autocomplete="tel">
+            </div>
+            <div class="field">
+              <label for="f-type">Type of event</label>
+              <select id="f-type" name="event_type">
+                <option value="">Select one</option>
+                <option>Wedding</option>
+                <option>Private celebration</option>
+                <option>Corporate &amp; brand event</option>
+                <option>Installation / activation</option>
+                <option>Something else</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form__row">
+            <div class="field">
+              <label for="f-date">Event date <span class="opt">(or approximate)</span></label>
+              <input type="text" id="f-date" name="event_date" placeholder="e.g. June 2027, or TBD">
+            </div>
+            <div class="field">
+              <label for="f-guests">Guest count <span class="opt">(optional)</span></label>
+              <input type="number" id="f-guests" name="guests" min="1" inputmode="numeric">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="f-venue">Venue or location <span class="opt">(optional)</span></label>
+            <input type="text" id="f-venue" name="venue" placeholder="Venue name, city, or “still looking”">
+          </div>
+
+          <div class="field">
+            <label for="f-message">Tell us about your event</label>
+            <textarea id="f-message" name="message" placeholder="The setting, the feeling you're after, colors you love — anything at all."></textarea>
+          </div>
+
+          <button type="submit" class="btn">Send Inquiry</button>
+        </form>
+
+        <div class="form__success" role="status" aria-live="polite">
+          <h3>Thank you &mdash; it's on its way.</h3>
+          <p>We read every inquiry ourselves and will be in touch shortly.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 11) FOOTER -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer__top">
+      <div class="footer__brand">
+        <a href="./" class="brand" aria-label="Abby Resnick — Floral Design, Los Angeles">
+          <img class="brand-logo brand-logo--footer" src="assets/brand/logo-reverse.svg" alt="Abby Resnick — Floral Design, Los Angeles">
+        </a>
+        <p>Boutique floral and event design in Los Angeles &mdash; garden-gathered, designed by hand, styled like a moment.</p>
+      </div>
+
+      <div>
+        <h4>Explore</h4>
+        <ul>
+          <li><a href="#services">Weddings</a></li>
+          <li><a href="#services">Private Events</a></li>
+          <li><a href="#services">Installations</a></li>
+          <li><a href="#work">Portfolio</a></li>
+          <li><a href="#studio">About</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4>Corporate</h4>
+        <ul>
+          <li><a href="#corporate">Corporate &amp; brand events</a></li>
+          <li><a href="#inquire">Corporate inquiry</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4>Visit</h4>
+        <ul>
+          <li>Los Angeles</li>
+          <li>By appointment</li>
+          <li><a href="mailto:hello@abbyresnick.com">hello@abbyresnick.com</a></li>
+          <li><a href="https://instagram.com/abbyresnickfloraldesign">@abbyresnickfloraldesign</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer__bottom">
+      <p>&copy; 2026 Abby Resnick Floral Design</p>
+      <p>Los Angeles, California</p>
+    </div>
+  </div>
+</footer>
+<script>
+/* Scroll reveal — progressive enhancement only */
+(function(){
+  var els=document.querySelectorAll('.reveal');
+  if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});return;}
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});
+  },{threshold:.12});
+  els.forEach(function(e){io.observe(e)});
+})();
+
+/* Mobile menu toggle */
+(function(){
+  var t=document.querySelector('.nav__toggle'), m=document.getElementById('mobileMenu');
+  if(!t||!m)return;
+  var closeBtn=m.querySelector('.mobile-menu__close');
+  function open(){m.classList.add('open');t.setAttribute('aria-expanded','true');m.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
+  function close(){m.classList.remove('open');t.setAttribute('aria-expanded','false');m.setAttribute('aria-hidden','true');document.body.style.overflow='';}
+  t.addEventListener('click',open);
+  closeBtn.addEventListener('click',close);
+  m.querySelectorAll('a').forEach(function(a){a.addEventListener('click',close);});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+})();
+</script>
+<script>
+/* Hero parallax — background drifts slower than the page on scroll */
+(function(){
+  var img=document.querySelector('.hero__bg img'), hero=document.querySelector('.hero');
+  if(!img||!hero)return;
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  var ticking=false;
+  function update(){
+    var y=window.scrollY||window.pageYOffset, max=hero.offsetHeight;
+    if(y<=max){ img.style.transform='translate3d(0,'+Math.min(y*0.18,70)+'px,0)'; }
+    ticking=false;
+  }
+  window.addEventListener('scroll',function(){if(!ticking){requestAnimationFrame(update);ticking=true;}},{passive:true});
+  update();
+})();
+
+/* Smooth in-page scrolling for every anchor CTA */
+(function(){
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  document.querySelectorAll('a[href^="#"]').forEach(function(a){
+    a.addEventListener('click',function(e){
+      var id=a.getAttribute('href');
+      if(id==='#'||id.length<2)return;
+      var t=document.querySelector(id);
+      if(!t)return;
+      e.preventDefault();
+      t.scrollIntoView({behavior:'smooth',block:'start'});
+      history.replaceState(null,'',id);
+    });
+  });
+})();
+
+/* Inquiry form — NOT WIRED TO A BACKEND YET.
+   Shows the confirmation state so the flow can be reviewed; no data is sent
+   or stored anywhere. Wire through the ghl-form-webhook SOP before launch. */
+(function(){
+  var box=document.getElementById('inquireForm');
+  if(!box)return;
+  var form=box.querySelector('form');
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var name=form.querySelector('#f-name'), email=form.querySelector('#f-email');
+    if(!name.value.trim()){name.focus();return;}
+    if(!email.value.trim()||email.value.indexOf('@')<0){email.focus();return;}
+    box.classList.add('is-sent');
+    box.scrollIntoView({behavior:'smooth',block:'center'});
+  });
+})();
+</script>
+
+<!-- Website Review widget — dormant until the URL carries ?review -->
+<!-- projectKey is set explicitly: the default board is the hostname, which would -->
+<!-- collide with every other site sharing a GitHub Pages / preview host. -->
+<script>window.WR_CONFIG={supabaseUrl:"https://vfdhlrikxcdturtvyxel.supabase.co",supabaseAnon:"sb_publishable_fwm9wkESvRdRLFNcnDC64A_vkpcdELa",projectKey:"abby-resnick"};</script>
+<script src="https://yoniversefilms.github.io/website-review/embed.js" defer></script>
+</body>
+</html>
