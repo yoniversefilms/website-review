@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>רות פדידה | הדרכת הורים בגישה תורנית</title>
+  <meta name="description" content="ליווי והדרכת הורים לאמהות שרוצות סמכות רגועה, קשר חם ואווירה נעימה בבית. שיחת היכרות ראשונה ללא עלות." />
+  <meta name="author" content="רות פדידה" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#FAF4ED" />
+
+  <!-- Domain https://www.ruthfadida.com/ inferred from the r@ruthfadida.com email — confirm it's the
+       live domain before launch (og:image / canonical / JSON-LD URLs must be absolute). -->
+  <link rel="canonical" href="https://www.ruthfadida.com/" />
+
+  <!-- Open Graph (Facebook / WhatsApp / LinkedIn) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="רות פדידה · הורות עם משמעות" />
+  <meta property="og:locale" content="he_IL" />
+  <meta property="og:title" content="רות פדידה | הדרכת הורים בגישה תורנית" />
+  <meta property="og:description" content="ליווי והדרכת הורים לאמהות שרוצות סמכות רגועה, קשר חם ואווירה נעימה בבית. שיחת היכרות ראשונה ללא עלות." />
+  <meta property="og:url" content="https://www.ruthfadida.com/" />
+  <meta property="og:image" content="https://www.ruthfadida.com/assets/og-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="רות פדידה · הורות עם משמעות" />
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="רות פדידה · הורות עם משמעות" />
+  <meta name="twitter:description" content="ליווי והדרכת הורים לאמהות שרוצות סמכות רגועה, קשר חם ואווירה נעימה בבית. שיחת היכרות ראשונה ללא עלות." />
+  <meta name="twitter:image" content="https://www.ruthfadida.com/assets/og-cover.jpg" />
+
+  <!-- schema.org structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ProfessionalService",
+    "name": "רות פדידה · הורות עם משמעות",
+    "description": "ליווי והדרכת הורים לאמהות שרוצות סמכות רגועה, קשר חם ואווירה נעימה בבית. שיחת היכרות ראשונה ללא עלות.",
+    "url": "https://www.ruthfadida.com/",
+    "image": "https://www.ruthfadida.com/assets/og-cover.jpg",
+    "email": "r@ruthfadida.com",
+    "areaServed": "IL",
+    "availableLanguage": "he",
+    "founder": {
+      "@type": "Person",
+      "name": "רות פדידה",
+      "jobTitle": "מדריכת הורים ומרצה לשלום בית וחינוך"
+    }
+  }
+  </script>
+
+  <!-- STYLE SOURCE: explorations/option-3-gentle.html ("gentle warm-editorial") —
+       Fredoka headings · Assistant body · Playpen Sans Hebrew handwriting accents (pink, sparing)
+       cream canvas · indigo ink · sage/lavender pastels · magenta reserved for CTA + script -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700&family=Assistant:wght@400;600;700&family=Playpen+Sans+Hebrew:wght@300;400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ===========================================================
+       TOKENS — option-3-gentle system (NOT the brand book)
+       =========================================================== */
+    :root{
+      /* brand palette only (deck "צבעוניות המותג") — cream is the whole-page background, no green */
+      --ink:#2F2E7E;         /* brand indigo — text + outlines */
+      --ink-soft:#565397;
+      --cream:#FAF4ED;       /* brand cream — whole-page background */
+      --cream-warm:#FDF8F2;
+      --blush:#F6DDE6;       /* brand blush */
+      --lav:#EADCF4;         /* light lavender */
+      --lav-deep:#B39BCA;    /* brand lavender */
+      --pop:#E54798;         /* brand magenta — CTAs + script accents */
+      /* legacy aliases kept so existing refs resolve to brand colors (no green) */
+      --sage:#FAF4ED;        /* → cream */
+      --sage-deep:#B39BCA;   /* → lavender */
+
+      --font-head:'Rubik',sans-serif;   /* interim stand-in for the brand font Teom FM */
+      --font-body:'Assistant',sans-serif;
+      --font-script:'Playpen Sans Hebrew',cursive;  /* interim stand-in for OHSalmanHabaka */
+
+      /* softly-organic radii — rounded rects with a whisper of asymmetry */
+      --wonk-a: 26px 34px 24px 36px / 34px 26px 36px 24px;
+      --wonk-b: 34px 24px 36px 26px / 24px 36px 26px 34px;
+      --wonk-c: 28px 36px 26px 30px / 36px 26px 32px 28px;
+
+      --maxw:1200px;
+      --ease:cubic-bezier(.22,.61,.36,1);
+    }
+
+    /* ===========================================================
+       RESET
+       =========================================================== */
+    *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+    html{ scroll-behavior:smooth; scroll-padding-top:92px; -webkit-text-size-adjust:100%; }
+    body{ font-family:var(--font-body); background:var(--cream); color:var(--ink);
+      font-size:17.5px; line-height:1.75; overflow-x:hidden; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+    a{ color:inherit; text-decoration:none; }
+    img,svg{ display:block; max-width:100%; }
+    button{ font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+    ul{ list-style:none; }
+    .container{ width:100%; max-width:var(--maxw); margin-inline:auto; padding-inline:clamp(20px,5vw,48px); position:relative; z-index:2; }
+
+    .headfont{ font-family:var(--font-head); font-weight:600; }
+
+    /* ===========================================================
+       BUTTONS — gentle organic press-down
+       =========================================================== */
+    .btn{
+      font-family:var(--font-head); font-weight:500; font-size:18px; line-height:1.2;
+      display:inline-flex; align-items:center; justify-content:center; gap:9px;
+      padding:14px 30px; border:2px solid var(--ink); border-radius:var(--wonk-a);
+      transition:transform .14s var(--ease), box-shadow .14s var(--ease); white-space:nowrap;
+    }
+    .btn svg{ width:18px; height:18px; }
+    .btn--primary{ background:var(--pop); color:#fff; border-color:var(--pop); box-shadow:none; }
+    .btn--secondary{ background:#fff; color:var(--ink); border-radius:var(--wonk-c); box-shadow:none; }
+    .btn:hover{ transform:rotate(-.4deg) translateY(-3px); box-shadow:none; }
+    .btn:active{ transform:translateY(2px); box-shadow:none; }
+    .btn:focus-visible{ outline:3px solid var(--ink); outline-offset:3px; }
+    .btn--lg{ padding:17px 36px; font-size:19px; }
+
+    /* ===========================================================
+       NAV — cream frosted
+       =========================================================== */
+    .nav{ position:fixed; inset-block-start:0; inset-inline:0; z-index:50;
+      transition:background .3s var(--ease), box-shadow .3s var(--ease), backdrop-filter .3s var(--ease); }
+    .nav.scrolled{ background:rgba(250,244,237,.86); backdrop-filter:blur(14px) saturate(1.05); box-shadow:0 8px 30px -18px rgba(47,46,126,.35); }
+    .nav__inner{ display:flex; align-items:center; justify-content:space-between; gap:24px; padding-block:12px; }
+    .nav__brand{ display:flex; align-items:center; }
+    .nav__logo{ height:56px; width:auto; flex:none; }
+    .nav__links{ display:flex; align-items:center; gap:28px; font-size:16.5px; font-weight:600; color:var(--ink-soft); }
+    .nav__links a{ position:relative; padding-block:6px; transition:color .2s var(--ease); }
+    .nav__links a::after{ content:""; position:absolute; inset-inline:0; bottom:2px; height:6px; z-index:-1;
+      background:var(--sage-deep); border-radius:6px 10px 8px 12px;
+      transform:scaleX(0); transform-origin:right; transition:transform .24s var(--ease); }
+    .nav__links a:hover{ color:var(--ink); } .nav__links a:hover::after{ transform:scaleX(1); }
+    .nav__cta{ padding:11px 24px; font-size:16.5px; box-shadow:none; }
+    .nav__toggle{ display:none; width:46px; height:46px; border-radius:var(--wonk-b); align-items:center; justify-content:center;
+      border:1.8px solid var(--ink); background:#fff; color:var(--ink); }
+    .nav__toggle svg{ width:22px; height:22px; }
+
+    /* ===========================================================
+       SECTION SCAFFOLD — full-bleed pastel bands
+       =========================================================== */
+    .sec{ position:relative; padding-block:clamp(64px,8vw,110px); }
+    .sec--cream{ background:var(--cream); }
+    .sec--sage{  background:var(--cream); }
+    .sec--lav{   background:var(--cream); }
+    /* v4: whole page is cream — the colored band-dividers are no longer needed */
+    .wave{ display:none !important; }
+    /* faded house watermark behind the גישה section */
+    .house-bg{ position:absolute; z-index:0; pointer-events:none;
+      top:50%; left:50%; transform:translate(-50%,-48%);
+      width:min(540px,80%); height:auto; color:var(--lav-deep); opacity:.2; }
+    /* problem section: symmetric, congruent cards (2×2) */
+    .cards--sym{ max-width:880px; margin-inline:auto; }
+    @media (min-width:721px){ .cards--sym{ grid-template-columns:repeat(2,1fr); } }
+    /* contact form — leave details, sent to email */
+    .cform{ display:grid; gap:13px; max-width:520px; margin:22px auto 4px; text-align:start; }
+    [hidden]{ display:none !important; }   /* ensure the hidden attribute wins over display:grid etc. */
+    .cform__row{ display:grid; gap:13px; grid-template-columns:1fr 1fr; }
+    .cform__in{ font-family:var(--font-body); font-size:16.5px; color:var(--ink); width:100%;
+      background:#fff; border:2px solid var(--ink); border-radius:var(--wonk-c); padding:13px 16px; }
+    .cform__in::placeholder{ color:var(--ink-soft); opacity:.72; }
+    .cform__in:focus-visible{ outline:3px solid var(--pop); outline-offset:2px; }
+    .cform__ta{ resize:vertical; min-height:64px; }
+    .cform__btn{ width:100%; margin-top:2px; }
+    .cform__sign{ display:block; text-align:center; margin-top:16px; }
+    .cform__mail{ justify-content:center; margin-top:8px; }
+    .cform__thanks{ max-width:520px; margin:22px auto 4px; text-align:center; background:#fff;
+      border:3px solid var(--pop); border-radius:26px 32px 24px 30px / 32px 24px 30px 26px;
+      padding:24px 26px; font-size:clamp(17px,1.5vw,20px); line-height:1.6; color:var(--ink); }
+    .cform__thanks strong{ color:var(--pop); }
+    .cform__err{ max-width:520px; margin:12px auto 0; text-align:center; color:var(--pop); font-weight:700; }
+    @media (max-width:560px){ .cform__row{ grid-template-columns:1fr; } }
+
+    .sec__head{ max-width:720px; margin-bottom:clamp(38px,5vw,56px); }
+    .sec__head.center{ margin-inline:auto; text-align:center; }
+    .eyebrow{
+      display:inline-block; font-size:15px; font-weight:700; letter-spacing:.03em; color:var(--ink);
+      background:var(--lav); border:1.6px solid var(--ink); border-radius:var(--wonk-b);
+      padding:6px 17px; margin-bottom:20px;
+    }
+    .eyebrow--sage{ background:var(--sage-deep); }
+    .eyebrow--blush{ background:var(--blush); }
+    /* plain kicker — for long descriptors that must not look like a button */
+    .eyebrow--plain{ background:none; border:none; padding:0; border-radius:0;
+      font-size:14.5px; letter-spacing:.09em; color:var(--ink-soft); margin-bottom:14px; }
+    .sec__title{ font-family:var(--font-head); font-weight:600; font-size:clamp(30px,3.6vw,44px); line-height:1.24; letter-spacing:-.005em; text-wrap:balance; }
+    .sec__intro{ font-size:clamp(17px,1.4vw,19px); margin-top:14px; color:var(--ink-soft); text-wrap:pretty; }
+
+    /* script accent — the logo echo (pink, used sparingly).
+       weight forced to 400 + no synthetic bold, or browsers fake-bold the
+       handwriting into a plain rounded sans */
+    .script{ font-family:var(--font-script); font-weight:400 !important; color:var(--pop);
+      font-synthesis:none; -webkit-font-synthesis:none; }
+
+    /* wave transitions */
+    .wave{ display:block; width:100%; height:74px; margin-bottom:-1px; position:relative; z-index:1; }
+    .wave--flip{ transform:scaleX(-1); }
+
+    /* childish-flare doodles — sparse, never clutter */
+    .dd{ position:absolute; pointer-events:none; z-index:1; }
+    /* painted brush swash behind a key word */
+    .mark{ position:relative; white-space:nowrap; }
+    .mark .paint{ position:absolute; z-index:-1; right:-4%; left:-4%; bottom:.02em; height:.52em; width:108%; }
+
+    /* ===========================================================
+       HERO — full-bleed photo background, no arch
+       =========================================================== */
+    .hero{
+      position:relative; min-height:94vh;
+      display:flex; align-items:center;
+      padding-block:clamp(130px,16vh,180px) clamp(120px,14vw,170px);
+      isolation:isolate; overflow:hidden;
+    }
+    /* desktop: the photo lives on the LEFT, smaller, dissolving organically on ALL sides
+       (radial mask) so the mother-and-child scene reads clearly against the cream */
+    .hero__bg{ position:absolute; inset-block:0; inset-inline-end:-2%; width:60%; z-index:-2;
+      background:url("assets/hero-v4.jpg") 52% center / cover no-repeat;
+      -webkit-mask-image:linear-gradient(to right, #000 54%, transparent 97%);
+              mask-image:linear-gradient(to right, #000 54%, transparent 97%);
+    }
+    .hero__veil{ position:absolute; inset:0; z-index:-1; background:none; }
+    .hero__copy{ max-width:640px; }
+    .hero h1{
+      font-family:var(--font-head); font-weight:600; color:var(--ink);
+      font-size:clamp(40px,4.8vw,64px); line-height:1.16; letter-spacing:-.005em; text-wrap:balance;
+    }
+    .hero h1 .script{ display:block; font-size:.98em; line-height:1.34; transform:rotate(-1.2deg); margin-bottom:2px; }
+    .hero__sub{ font-size:clamp(17.5px,1.5vw,20px); color:var(--ink); max-width:52ch; margin-top:16px; text-wrap:pretty; }
+    .hero__sub b{ font-weight:700; }
+    .hero__actions{ display:flex; flex-wrap:wrap; gap:16px; margin-top:32px; }
+    .hero .wave{ position:absolute; inset-inline:0; bottom:-1px; z-index:1; height:84px; }
+
+    /* quote bridge — Ruth's line straddling the hero→problem wave */
+    .bridge{
+      position:relative; z-index:3; max-width:620px;
+      margin:-108px auto 48px; text-align:center;
+      background:#fff; border:1.8px solid var(--ink); border-radius:var(--wonk-b);
+      padding:26px 36px 20px; box-shadow:none;
+    }
+    .bridge .q{ font-family:var(--font-script); font-weight:400; font-size:clamp(19px,2vw,24px); line-height:1.75; color:var(--ink); }
+    .bridge .by{ font-family:var(--font-script); font-weight:400; color:var(--pop); font-size:19px; display:inline-block; margin-top:8px; transform:rotate(-1.5deg); }
+
+    /* ===========================================================
+       PROBLEM — pain cards on sage
+       =========================================================== */
+    .cards{ display:grid; grid-template-columns:repeat(4,1fr); gap:26px; }
+    .cards--learn{ row-gap:44px; }
+    .cards--learn .card{ padding:38px 22px 24px; }
+    .cards--learn .card p{ font-size:15.5px; }
+    .card{
+      position:relative; background:#fff; border:1.7px solid var(--ink);
+      padding:42px 24px 26px; transition:transform .18s var(--ease);
+    }
+    .card:nth-child(4n+1){ border-radius:var(--wonk-a); box-shadow:none; }
+    .card:nth-child(4n+2){ border-radius:var(--wonk-b); box-shadow:none; }
+    .card:nth-child(4n+3){ border-radius:var(--wonk-c); box-shadow:none; }
+    .card:nth-child(4n+4){ border-radius:var(--wonk-a); box-shadow:none; }
+    .card:hover{ transform:translateY(-5px) rotate(-.4deg); }
+    .card:nth-child(even):hover{ transform:translateY(-5px) rotate(.4deg); }
+    .card__ic{
+      position:absolute; top:-24px; inset-inline-start:22px;
+      width:50px; height:50px; display:flex; align-items:center; justify-content:center;
+      background:#fff; border:1.7px solid var(--ink); border-radius:var(--wonk-b); transform:rotate(-1.5deg);
+    }
+    .card:nth-child(even) .card__ic{ transform:rotate(1.2deg); border-radius:var(--wonk-c); }
+    .card__ic svg{ width:27px; height:27px; }
+    .card h3{ font-family:var(--font-head); font-weight:600; font-size:21px; line-height:1.3; margin-bottom:8px; }
+    .card p{ color:var(--ink-soft); font-size:16.5px; line-height:1.65; }
+    .note{ margin-top:42px; font-size:20px; font-weight:600; text-align:center; text-wrap:balance; }
+    .note b{ color:var(--pop); }
+
+    /* ===========================================================
+       GUIDE / ABOUT — soft organic photo frame (no arch)
+       =========================================================== */
+    .guide{ display:grid; grid-template-columns:.9fr 1.1fr; align-items:center; gap:clamp(36px,5vw,76px); }
+    .guide__visual{ position:relative; display:flex; align-items:center; justify-content:center; }
+    .guide__frame{
+      position:relative; width:min(380px,88%); aspect-ratio:4/5; overflow:hidden;
+      border:2px solid var(--ink); border-radius:38px 46px 40px 52px / 46px 38px 50px 42px;
+      box-shadow:none; background:var(--lav);
+    }
+    .guide__frame img{ width:100%; height:100%; object-fit:cover; object-position:center top; }
+    /* placeholder until Ruth's real photo arrives — logo on lavender + a handwritten note */
+    .guide__frame--waiting{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+      background:linear-gradient(170deg, var(--lav) 0%, var(--blush) 100%); }
+    .waiting-note{ font-family:var(--font-script); font-weight:400; font-size:19px; color:var(--ink-soft);
+      transform:rotate(-2deg); padding-bottom:26px; }
+    .guide__sticker{
+      position:absolute; bottom:26px; inset-inline-end:-14px;
+      font-family:var(--font-script); font-size:21px; color:var(--ink);
+      background:#fff; border:1.6px solid var(--ink); border-radius:var(--wonk-a);
+      padding:8px 18px; transform:rotate(-2deg); box-shadow:none;
+    }
+    /* Ruth's story = a handwritten letter, in pen-indigo */
+    .guide__body .sec__title{ font-family:var(--font-script); font-weight:400; font-size:clamp(28px,3.2vw,40px); line-height:1.4; }
+    .guide__body p{ font-family:var(--font-script); font-weight:300; color:var(--ink); font-size:clamp(17px,1.5vw,20px); line-height:1.95; margin-top:18px; }
+    .creds{ display:flex; flex-wrap:wrap; gap:10px; margin-top:26px; }
+    .cred{
+      display:inline-flex; align-items:center; gap:8px; background:#fff; border:1.6px solid var(--ink);
+      color:var(--ink); font-weight:600; font-size:15px; padding:8px 16px;
+    }
+    .cred:nth-child(odd){ border-radius:var(--wonk-b); }
+    .cred:nth-child(even){ border-radius:var(--wonk-c); }
+    .cred svg{ width:15px; height:15px; color:var(--lav-deep); }
+
+    /* ===========================================================
+       PROCESS — 3 steps on lavender
+       =========================================================== */
+    .steps{ display:grid; grid-template-columns:repeat(3,1fr); gap:28px; }
+    .step{
+      position:relative; background:#fff; border:1.7px solid var(--ink);
+      padding:44px 26px 28px; transition:transform .18s var(--ease);
+    }
+    .step:nth-child(1){ border-radius:var(--wonk-a); box-shadow:none; }
+    .step:nth-child(2){ border-radius:var(--wonk-b); box-shadow:none; }
+    .step:nth-child(3){ border-radius:var(--wonk-c); box-shadow:none; }
+    .step:hover{ transform:translateY(-5px); }
+    .step__n{
+      position:absolute; inset-block-start:-24px; inset-inline-end:24px;
+      width:50px; height:50px; display:flex; align-items:center; justify-content:center;
+      font-family:var(--font-head); font-weight:600; font-size:20px; color:var(--ink);
+      background:var(--sage-deep); border:1.7px solid var(--ink); border-radius:var(--wonk-b); transform:rotate(-1.5deg);
+    }
+    .step:nth-child(2) .step__n{ background:var(--lav); transform:rotate(1.2deg); }
+    .step:nth-child(3) .step__n{ background:var(--blush); }
+    .step__ic{ width:48px; height:48px; margin-bottom:14px; }
+    .step__ic svg{ width:100%; height:100%; }
+    .step h3{ font-family:var(--font-head); font-weight:600; font-size:23px; margin-bottom:8px; }
+    .step p{ color:var(--ink-soft); font-size:16.5px; line-height:1.65; }
+    .process__cta{ display:flex; justify-content:center; margin-top:52px; }
+
+    /* ===========================================================
+       VALUES — 6 icon tiles
+       =========================================================== */
+    .values{ display:grid; grid-template-columns:repeat(6,1fr); gap:20px; margin-top:clamp(36px,5vw,54px); }
+    .value{ text-align:center; }
+    .value__ic{
+      width:88px; height:92px; margin:0 auto 12px; display:flex; align-items:center; justify-content:center;
+      background:#fff; border:1.7px solid var(--ink);
+    }
+    .value:nth-child(3n+1) .value__ic{ border-radius:var(--wonk-a); box-shadow:none; }
+    .value:nth-child(3n+2) .value__ic{ border-radius:var(--wonk-b); box-shadow:none; }
+    .value:nth-child(3n+3) .value__ic{ border-radius:var(--wonk-c); box-shadow:none; }
+    .value__ic svg{ width:46px; height:46px; }
+    .value span{ font-weight:700; font-size:16px; }
+
+    /* ===========================================================
+       TRANSFORMATION — before / after
+       =========================================================== */
+    .ba{ display:grid; grid-template-columns:1fr 1fr; gap:30px; }
+    .ba__col{ border:1.7px solid var(--ink); padding:34px 30px; background:#fff; }
+    .ba__col--before{ border-radius:var(--wonk-b); box-shadow:none; }
+    .ba__col--after{ border-radius:var(--wonk-a); background:linear-gradient(170deg,#fff 0%, var(--sage) 100%); box-shadow:none; }
+    .ba__tag{
+      display:inline-block; font-family:var(--font-head); font-weight:500; font-size:15px;
+      border:1.6px solid var(--ink); padding:6px 18px; margin-bottom:20px; transform:rotate(-1deg);
+    }
+    .ba__col--before .ba__tag{ background:var(--lav); border-radius:var(--wonk-c); }
+    .ba__col--after .ba__tag{ background:var(--sage-deep); border-radius:var(--wonk-b); transform:rotate(1deg); }
+    .ba__list li{ display:flex; align-items:flex-start; gap:13px; padding-block:11px; font-size:17px; }
+    .ba__list li + li{ border-top:1.4px dashed rgba(47,46,126,.22); }
+    .ba__list .mk{ flex:none; width:25px; height:25px; display:flex; align-items:center; justify-content:center; margin-top:2px;
+      border:1.5px solid var(--ink); border-radius:45% 55% 52% 48% / 55% 45% 55% 45%; }
+    .ba__col--before .mk{ background:var(--cream); color:var(--ink-soft); }
+    .ba__col--before .mk svg{ width:12px; height:12px; }
+    .ba__col--after .mk{ background:var(--sage-deep); color:var(--ink); }
+    .ba__col--after .mk svg{ width:13px; height:13px; }
+    .ba__col--before .ba__list li{ color:var(--ink-soft); }
+
+    /* ===========================================================
+       TESTIMONIALS
+       =========================================================== */
+    .quotes{ display:grid; grid-template-columns:repeat(3,1fr); gap:28px; }
+    .quote{
+      background:#fff; border:1.7px solid var(--ink); padding:30px 26px;
+      display:flex; flex-direction:column; transition:transform .18s var(--ease);
+    }
+    .quote:nth-child(1){ border-radius:var(--wonk-a); box-shadow:none; }
+    .quote:nth-child(2){ border-radius:var(--wonk-b); box-shadow:none; }
+    .quote:nth-child(3){ border-radius:var(--wonk-c); box-shadow:none; }
+    .quote:hover{ transform:translateY(-5px) rotate(-.3deg); }
+    .quote__mark{ width:36px; height:36px; color:var(--lav-deep); margin-bottom:10px; }
+    .quote p{ font-size:16.8px; flex:1; text-wrap:pretty; line-height:1.7; }
+    .quote__by{ display:flex; align-items:center; gap:12px; margin-top:20px; }
+    .quote__av{
+      width:44px; height:44px; border-radius:45% 55% 52% 48% / 55% 45% 55% 45%; border:1.6px solid var(--ink);
+      color:var(--ink); font-weight:700; display:flex; align-items:center; justify-content:center; flex:none;
+    }
+    .quote:nth-child(1) .quote__av{ background:var(--blush); }
+    .quote:nth-child(2) .quote__av{ background:var(--sage-deep); }
+    .quote:nth-child(3) .quote__av{ background:var(--lav); }
+    .quote__by b{ display:block; font-size:16px; } .quote__by span{ font-size:14.5px; color:var(--ink-soft); }
+    .ph-note{ text-align:center; margin-top:30px; font-size:14.5px; color:var(--ink-soft); }
+
+    /* ===========================================================
+       FINAL CTA — white organic panel on lavender band
+       =========================================================== */
+    .cta-final{ text-align:center; }
+    .cta-card{
+      position:relative; max-width:860px; margin-inline:auto;
+      padding:clamp(44px,6vw,68px) clamp(26px,5vw,60px);
+      background:#fff; border:2px solid var(--ink); border-radius:var(--wonk-b);
+      box-shadow:none;
+    }
+    .cta-card .tag{
+      position:absolute; top:-18px; inset-inline-end:44px;
+      background:var(--sage-deep); border:1.6px solid var(--ink); border-radius:var(--wonk-a);
+      padding:5px 16px; font-size:14px; font-weight:700; transform:rotate(1deg);
+    }
+    .cta-final .sec__title{ font-size:clamp(30px,4vw,46px); }
+    .cta-final p{ max-width:600px; margin:16px auto 0; color:var(--ink-soft); font-size:18px; text-wrap:pretty; }
+    .cta-final .script{ display:block; font-size:26px; margin-top:18px; transform:rotate(-2deg); }
+    .cta-final__row{ display:flex; flex-wrap:wrap; gap:16px; justify-content:center; align-items:center; margin-top:32px; }
+    .contactline{
+      display:inline-flex; align-items:center; gap:9px; font-weight:700; font-size:16.5px; color:var(--ink);
+      padding:13px 22px; border:1.7px solid var(--ink); background:var(--cream);
+    }
+    .contactline:nth-of-type(odd){ border-radius:var(--wonk-c); }
+    .contactline:nth-of-type(even){ border-radius:var(--wonk-a); }
+    .contactline svg{ width:18px; height:18px; }
+
+    /* ===========================================================
+       FOOTER — sage mist
+       =========================================================== */
+    .footer{ background:var(--sage); padding-block:clamp(48px,6vw,68px) 28px; }
+    .footer__top{ display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:36px; align-items:start; }
+    .footer__logo{ height:72px; width:auto; margin-bottom:14px; }
+    .footer__tag{ color:var(--ink-soft); max-width:300px; font-size:16px; }
+    .footer h4{ font-family:var(--font-head); font-weight:600; font-size:17px; margin-bottom:14px; }
+    .footer__links li, .footer__contact li{ margin-bottom:10px; }
+    .footer__links a, .footer__contact a{ color:var(--ink-soft); transition:color .2s var(--ease); display:inline-flex; align-items:center; gap:9px; font-weight:600; }
+    .footer__links a:hover, .footer__contact a:hover{ color:var(--ink); }
+    .footer__contact svg{ width:17px; height:17px; }
+    .footer__bottom{ margin-top:42px; padding-top:20px; border-top:1.5px dashed rgba(47,46,126,.28);
+      display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; color:var(--ink-soft); font-size:14.5px; }
+
+    /* ===========================================================
+       REVEAL ANIMATION
+       =========================================================== */
+    .reveal{ opacity:0; transform:translateY(22px); transition:opacity .7s var(--ease), transform .7s var(--ease); }
+    .reveal.in{ opacity:1; transform:none; }
+    /* WHY PRIVATE GUIDANCE — centered prose column with two callout cards */
+    .why__wrap{ max-width:760px; margin-inline:auto; display:grid; gap:20px; }
+    .why__wrap p{ font-size:clamp(16.5px,1.4vw,18.5px); line-height:1.8; color:var(--ink-soft); text-wrap:pretty; }
+    .why__lead{ font-family:var(--font-head); font-weight:600; font-size:clamp(19px,1.9vw,24px) !important; line-height:1.4; color:var(--ink) !important; text-align:center; }
+    .why__card{ background:#fff; border:2px solid var(--ink); border-radius:var(--wonk-a); box-shadow:none; padding:22px 26px; }
+    .why__card:nth-of-type(even){ box-shadow:none; }
+    .why__close{ text-align:center; font-weight:700; color:var(--ink) !important; }
+
+    /* OUTCOMES — single-column verbatim checklist (בעקבות התהליך) */
+    .outcomes{ max-width:660px; margin-inline:auto; display:grid; gap:15px; }
+    .outcome{ display:flex; gap:13px; align-items:flex-start; background:#fff; border:2px solid var(--ink); border-radius:var(--wonk-b); box-shadow:none; padding:15px 20px; font-size:clamp(16px,1.35vw,18px); line-height:1.55; text-wrap:pretty; }
+    .outcome .mk{ flex:none; color:var(--pop); margin-top:3px; }
+    .outcome .mk svg{ width:22px; height:22px; }
+
+    @media (prefers-reduced-motion:reduce){ .reveal{ opacity:1; transform:none; transition:none; } html{ scroll-behavior:auto; } }
+
+    /* ===========================================================
+       RESPONSIVE — option-3 behavior
+       =========================================================== */
+    @media (max-width:1040px){
+      .cards{ grid-template-columns:repeat(2,1fr); row-gap:38px; }
+      .values{ grid-template-columns:repeat(3,1fr); row-gap:30px; }
+    }
+    @media (max-width:900px){
+      .nav__links, .nav__cta{ display:none; }
+      .nav__toggle{ display:flex; }
+      .nav.open .nav__links{ display:flex; position:absolute; inset-block-start:100%; inset-inline:0; flex-direction:column;
+        gap:4px; background:rgba(250,244,237,.97); backdrop-filter:blur(12px); padding:16px 24px 22px; align-items:flex-start;
+        border-bottom:1.7px solid var(--ink); }
+      .nav.open .nav__links a{ width:100%; padding-block:11px; font-size:18px; color:var(--ink); }
+      .hero{ min-height:auto; }
+      /* mobile: full-bleed photo again, veil dialed down for more photo presence */
+      .hero__bg{ inset:0; width:100%; -webkit-mask-image:none; mask-image:none; }
+      .hero__veil{ background:
+        linear-gradient(to left, rgba(250,244,237,.88) 0%, rgba(250,244,237,.76) 55%, rgba(250,244,237,.52) 100%),
+        linear-gradient(to top, rgba(250,244,237,.85) 0%, rgba(250,244,237,.05) 30%); }
+      .steps{ grid-template-columns:1fr; gap:40px; }
+      .step__n{ inset-inline-end:auto; inset-inline-start:24px; }
+      .guide{ grid-template-columns:1fr; gap:54px; }
+      .guide__sticker{ inset-inline-end:8px; }
+      .ba{ grid-template-columns:1fr; }
+      .quotes{ grid-template-columns:1fr; }
+      .footer__top{ grid-template-columns:1fr 1fr; }
+    }
+    @media (max-width:560px){
+      body{ font-size:17px; }
+      .cards{ grid-template-columns:1fr; }
+      .values{ grid-template-columns:repeat(2,1fr); }
+      .footer__top{ grid-template-columns:1fr; }
+      .sec__head{ margin-bottom:32px; }
+      .bridge{ margin:-78px auto 40px; padding:20px 22px 16px; }
+      .hero__actions .btn{ width:100%; }
+      .cta-final__row .btn{ width:100%; }
+    }
+
+    /* ===== v4 BOLD pass — hot-pink card frames · flat (shadows removed) · heavier, higher-contrast type ===== */
+    .card, .step, .quote, .why__card, .cta-card, .outcome, .guide__frame{
+      border:3px solid var(--pop);
+    }
+    .value__ic{ border-width:2.5px; }
+    .btn, .btn--secondary, .cform__in, .nav__toggle{ border-width:2.5px; }
+    .hero h1, .sec__title{ font-weight:700; letter-spacing:-.012em; }
+    .card h3, .step h3, .why__card h3, .value span, .headfont, .quote__by b{ font-weight:700; }
+    .eyebrow{ font-weight:800; border-width:2px; }
+    .btn{ font-weight:600; }
+    .note{ font-weight:700; }
+
+    /* bio letter — centered, framed, with a feather + her handwritten "רות" signature (from the logo) */
+    .letter{ position:relative; text-align:center; background:#fff;
+      border:3px solid var(--pop); border-radius:30px 38px 28px 34px / 38px 28px 34px 30px;
+      padding:clamp(38px,4vw,56px) clamp(26px,4vw,46px) clamp(30px,4vw,44px); }
+    .letter .sec__title{ margin-top:4px; }
+    .letter p{ margin-top:14px; }
+    .letter__hi{ display:inline-block; font-size:26px; color:var(--pop); transform:rotate(-2deg); }
+    .letter__feather{ position:absolute; inset-block-start:-22px; inset-inline-start:28px;
+      width:48px; height:48px; color:var(--pop); background:var(--cream);
+      border:2.5px solid var(--pop); border-radius:50%; padding:8px; transform:rotate(-12deg); }
+    .sign-ruth{ width:132px; height:auto; color:var(--pop); margin:22px auto 0; display:block; }
+
+    /* ---- v5: pending-content placeholder chip (visible in drafts; remove before launch) ---- */
+    .ph{ background:var(--blush); border:1.5px dashed var(--pop); border-radius:8px; padding:1px 8px; font-weight:700; color:var(--ink); }
+
+    /* ---- v5: hero name-line above the H1 ---- */
+    .hero__name{ display:block; font-weight:800; letter-spacing:.02em; color:var(--pop);
+      font-size:clamp(15px,1.4vw,18px); margin-bottom:12px; }
+
+    /* ---- v5: "איך נראה התהליך" practical box ---- */
+    .howbox{ max-width:720px; margin:38px auto 0; background:#fff; border:3px solid var(--pop);
+      border-radius:22px; padding:26px 30px; }
+    .howbox h3{ font-size:clamp(19px,1.9vw,23px); margin-bottom:10px; }
+    .howbox ul{ list-style:none; display:grid; gap:10px; margin-top:8px; }
+    .howbox li{ display:flex; gap:10px; align-items:flex-start; }
+    .howbox li svg{ width:20px; height:20px; flex:0 0 auto; margin-top:3px; color:var(--pop); }
+
+    /* ---- v5: FAQ accordion ---- */
+    .faq{ max-width:760px; margin-inline:auto; display:grid; gap:14px; }
+    .faq details{ background:#fff; border:3px solid var(--pop); border-radius:18px; padding:16px 22px; }
+    .faq summary{ cursor:pointer; font-weight:700; font-size:clamp(16.5px,1.5vw,19px); list-style:none; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .faq summary::-webkit-details-marker{ display:none; }
+    .faq summary::after{ content:"+"; font-weight:800; color:var(--pop); font-size:22px; line-height:1; }
+    .faq details[open] summary::after{ content:"–"; }
+    .faq details p{ margin-top:10px; }
+
+    /* ---- v5: lectures & media mockup tiles ---- */
+    .media-tile{ aspect-ratio:16/9; border-radius:14px; background:var(--lav); border:2.5px dashed var(--lav-deep);
+      display:flex; align-items:center; justify-content:center; flex-direction:column; gap:6px; margin-bottom:14px; color:var(--ink); }
+    .media-tile svg{ width:34px; height:34px; color:var(--pop); }
+    .media-tile span{ font-weight:700; font-size:14.5px; opacity:.75; }
+  </style>
+
+  <!-- Without JS the reveal-on-scroll elements never get their .in class, so make
+       everything visible up-front when scripting is off (page is otherwise blank below the hero). -->
+  <noscript><style>.reveal{ opacity:1 !important; transform:none !important; }</style></noscript>
+</head>
+
+<body>
+  <!-- ============ ICON SPRITE (two-tone: indigo + logo-pink details) ============ -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <!-- ORGANIC HAND-DRAWN SET — wobbly strokes, rounded caps, pastel fills -->
+      <symbol id="ic-growth" viewBox="0 0 48 48" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M24.5 40.8c-.8-5.9-.1-12 -.4-17.9" stroke="#2f2e7e" stroke-width="2.5"/>
+        <path d="M23.3 24.6C23 17.4 18.3 11.9 10.8 10.8c.3 7.5 5.1 12.9 12.5 13.8Z" fill="#CBB9DD" stroke="#2f2e7e" stroke-width="2.1"/>
+        <path d="M24.9 21.4c.2-6.9 4.7-12 12-12.8.5 6.9-4 12-12 12.8Z" fill="#CBB9DD" stroke="#2f2e7e" stroke-width="2.1"/>
+        <path d="M14.6 42.3c2.4-.6 4.8-.7 7.2-.5" stroke="#2f2e7e" stroke-width="2.2"/>
+        <path d="M26.5 42c2-.4 4-.4 5.9-.2" stroke="#2f2e7e" stroke-width="2.2"/>
+        <path d="M23.9 22.6c.5-.4 1.1-.4 1.6-.1" stroke="#2f2e7e" stroke-width="2.2"/>
+      </symbol>
+      <symbol id="ic-compass" viewBox="0 0 48 48" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23.6 7.1c9.6-.9 17.2 6.8 17.1 16.4-.1 9.5-7.6 17.1-16.9 17.1-9.4 0-16.9-7.5-16.9-16.9 0-9.2 7.2-16 16.7-16.6Z" fill="#ffffff" stroke="#2f2e7e" stroke-width="2.4"/>
+        <path d="M9.9 17.9c-1.3 3.6-1.3 7.6.1 11.4" stroke="#2f2e7e" stroke-width="1.4" opacity=".45"/>
+        <g stroke="#2f2e7e" stroke-width="1.7">
+          <path d="M24 9.6c-.1 1-.1 1.9 0 2.9"/><path d="M23.9 35.5c.1 1 .1 2 .1 2.9"/><path d="M9.6 24c1-.1 1.9-.1 2.9 0"/><path d="M35.5 23.9c1 .1 2 .1 2.9.1"/>
+        </g>
+        <path d="M23.5 12.9c1.8 3.5 3.1 7.1 4 11-1.4.3-2.9.4-4.3.4 0-3.8.1-7.6.3-11.4Z" fill="#E54798" stroke="#2f2e7e" stroke-width="1.6"/>
+        <path d="M24.5 35.1c-1.8-3.5-3.1-7.1-4-10.9 1.4-.3 2.9-.4 4.3-.4 0 3.7-.1 7.5-.3 11.3Z" fill="#CBB9DD" stroke="#2f2e7e" stroke-width="1.6"/>
+      </symbol>
+      <symbol id="ic-path" viewBox="0 0 48 48" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14.8 43c-1.9-5.1 7.1-6.1 6.8-11.2-.3-4.8-8-5.4-7.6-10.3.4-4.8 7.5-5.6 7.8-10.6" stroke="#2f2e7e" stroke-width="2.9" stroke-dasharray="5.2 5.8"/>
+        <path d="M22.3 4.9c-.3 4.4-.4 8.9-.4 13.4" stroke="#2f2e7e" stroke-width="2.6"/>
+        <path d="M22.7 6.1c3.9-1 7.9 1 11.6.1-1.1 1.5-2 2.8-2.7 4.3.7 1.4 1.6 2.7 2.9 4.1-3.9 1.1-8-.8-11.8.2Z" fill="#E54798" stroke="#2f2e7e" stroke-width="1.7"/>
+        <path d="M12.5 43.5c1.4-.5 2.9-.5 4.3-.1" stroke="#2f2e7e" stroke-width="2.4"/>
+      </symbol>
+      <!-- אהבה: a clear little house with a big heart inside -->
+      <symbol id="ic-love" viewBox="0 0 48 48" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9.2 23.2C14.1 18.1 19 13.3 24 8.7c5 4.6 9.9 9.4 14.8 14.4" stroke="#2f2e7e" stroke-width="2.6"/>
+        <path d="M12.3 21.6c-.4 6-.4 12 .1 18.1 7.8.6 15.5.6 23.3 0 .5-6.1.5-12.1.1-18.2" stroke="#2f2e7e" stroke-width="2.5"/>
+        <path d="M31.9 12.2c.1 1.5.1 3 .1 4.6" stroke="#2f2e7e" stroke-width="2.3"/>
+        <path d="M24 34.2c-3.2-2.2-5.5-4.1-5.4-6.8.1-1.7 1.4-2.9 2.9-2.9 1.1 0 2 .5 2.5 1.3.5-.8 1.4-1.3 2.5-1.3 1.5 0 2.8 1.2 2.9 2.9.1 2.7-2.2 4.6-5.4 6.8Z" fill="#E54798" stroke="#2f2e7e" stroke-width="1.6"/>
+      </symbol>
+      <!-- גבולות: a garden fence with a heart — boundaries made of love -->
+      <symbol id="ic-fence" viewBox="0 0 48 48" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8.2 25.6c10.6-.9 21.2-.9 31.8-.2" stroke="#2f2e7e" stroke-width="2"/>
+        <path d="M8.3 33.8c10.6-.8 21.2-.8 31.7-.1" stroke="#2f2e7e" stroke-width="2"/>
+        <path d="M10.9 20.2l2.7-3.2 2.7 3.2c.2 6-.1 12.1-.3 18.3-1.6.2-3.2.2-4.8 0-.2-6.2-.4-12.3.4-18.3Z" fill="#ffffff" stroke="#2f2e7e" stroke-width="2.1"/>
+        <path d="M21.3 17.3 24 14.1l2.7 3.2c.2 7-.1 14-.3 21-1.6.2-3.2.2-4.8 0-.2-7-.4-14 .4-21Z" fill="#ffffff" stroke="#2f2e7e" stroke-width="2.1"/>
+        <path d="M31.7 20.2l2.7-3.2 2.7 3.2c.2 6-.1 12.1-.3 18.3-1.6.2-3.2.2-4.8 0-.2-6.2-.4-12.3.4-18.3Z" fill="#ffffff" stroke="#2f2e7e" stroke-width="2.1"/>
+        <path d="M24 28.4c-1.8-1.3-3.1-2.4-3-3.9.1-1 .8-1.6 1.6-1.6.6 0 1.1.3 1.4.8.3-.5.8-.8 1.4-.8.8 0 1.5.6 1.6 1.6.1 1.5-1.2 2.6-3 3.9Z" fill="#E54798"/>
+      </symbol>
+      <!-- איזון: a level seesaw — a heart and a boundary-block in balance -->
+      <symbol id="ic-seesaw" viewBox="0 0 48 48" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M24 33.6c-1.9 2.8-3.9 5.5-6.1 8.1 4.1.5 8.2.5 12.3 0-2.2-2.6-4.3-5.3-6.2-8.1Z" fill="#CBB9DD" stroke="#2f2e7e" stroke-width="2"/>
+        <path d="M8.4 32.9c10.4-1.9 20.8-2 31.2-.3" stroke="#2f2e7e" stroke-width="2.5"/>
+        <path d="M14.3 29.3c-2.3-1.6-3.9-3-3.8-4.9.1-1.2 1-2 2-2 .8 0 1.4.4 1.8 1 .4-.6 1-1 1.8-1 1 0 2 .8 2 2 .1 1.9-1.5 3.3-3.8 4.9Z" fill="#E54798" stroke="#2f2e7e" stroke-width="1.5"/>
+        <path d="M30.8 23.9c2.1-.3 4.2-.3 6.3-.1.3 2.1.3 4.2.1 6.4-2.1.3-4.2.3-6.3.1-.3-2.2-.3-4.3-.1-6.4Z" fill="#CBB9DD" stroke="#2f2e7e" stroke-width="1.7"/>
+      </symbol>
+      <symbol id="ic-spark" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.6c.8 3.9 2.6 5.8 6.6 6.5-4 .8-5.8 2.7-6.5 6.6-.8-3.9-2.7-5.8-6.7-6.5 4-.8 5.9-2.7 6.6-6.6Z"/></symbol>
+      <symbol id="ic-cloud" viewBox="0 0 24 24" fill="none" stroke="#2f2e7e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7.1 17.7c-2.7-.3-4.3-2.4-3.9-4.9.4-2.3 2.4-3.7 4.8-3.3.9-3.3 3.8-4.6 6.3-3.7 2.5.9 3.7 3.3 3.2 5.9 2 .3 3.1 1.6 2.9 3.3-.2 1.6-1.4 2.6-3.2 2.8"/>
+        <path d="M9.1 20c.1.5.1 1 .1 1.5M12.3 19.4c0 .8 0 1.6-.1 2.4M15.4 20c0 .5-.1 1-.2 1.5" stroke="#CBB9DD"/>
+      </symbol>
+      <!-- אין כלים ברורים: a big hand-drawn question mark -->
+      <symbol id="ic-question" viewBox="0 0 24 24" fill="none" stroke="#2f2e7e" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8.2 8.1c.5-2.8 2.9-4.6 5.6-4.2 2.6.4 4.3 2.5 4 5-.2 2.2-1.9 3.2-3.5 4.3-1.1.8-1.9 1.6-2.1 3l-.1 1"/>
+        <path d="M11.9 20.7c.3-.1.6-.1.9.1" stroke-width="2.6"/>
+      </symbol>
+      <!-- תהליך מובנה: a spiral notebook with ticked-off steps -->
+      <symbol id="ic-notebook" viewBox="0 0 24 24" fill="none" stroke="#2f2e7e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5.9 5.4c4.1-.4 8.1-.4 12.2-.1.4 5.1.4 10.2 0 15.3-4 .4-8 .4-12 0-.4-5.1-.5-10.1-.2-15.2Z" fill="#ffffff"/>
+        <path d="M8.4 3.2c0 1-.1 2 0 3M12 3.1c0 1 0 2 .1 3M15.6 3.2c0 1 0 2 0 3" stroke-width="1.6"/>
+        <path d="m7.9 11 1.2 1.2 2-2.2" stroke-width="1.7"/>
+        <path d="M13.4 10.8c1.4-.1 2.7-.1 4 0" stroke="#CBB9DD"/>
+        <path d="m7.9 16.2 1.2 1.2 2-2.2" stroke-width="1.7"/>
+        <path d="M13.4 16c1.4-.1 2.7 0 4 .1" stroke="#CBB9DD"/>
+      </symbol>
+      <!-- הובלה בטוחה: a little crown — אמא מלכה, leading the home -->
+      <symbol id="ic-crown" viewBox="0 0 24 24" fill="none" stroke="#2f2e7e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4.9 16.9C4.6 13.8 4.3 10.7 4.1 7.6c1.9 1.5 3.8 3 5.6 4.6.7-2 1.5-4 2.3-5.9.8 1.9 1.6 3.9 2.3 5.9 1.8-1.6 3.7-3.1 5.6-4.6-.2 3.1-.5 6.2-.9 9.3-4.7.5-9.4.5-14.1 0Z" fill="#ffffff"/>
+        <path d="M5.7 19.8c4.2.4 8.4.4 12.6 0" stroke-width="1.9"/>
+        <path d="M11.6 10.1c.3-.2.6-.2.9 0" stroke="#E54798" stroke-width="2.2"/>
+      </symbol>
+      <!-- בלבול בגבולות: a tangled knot with loose ends -->
+      <symbol id="ic-maze" viewBox="0 0 24 24" fill="none" stroke="#2f2e7e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3.6 18.3c1.5-1.1 3-2.3 4.6-3.3 2.5-1.6 5.7-2.2 7.3-.2 1.4 1.8-.2 4-2.3 3.8-2.2-.2-3.1-2.6-2.4-4.8.8-2.4 3-4 5.5-4.4 1.6-.3 3.2-.1 4.6.6"/>
+        <path d="M20.9 10c.4.6.6 1.3.7 2.1" stroke="#CBB9DD" stroke-width="1.7"/>
+        <path d="M2.9 19.9c.3-.4.7-.8 1.1-1.1" stroke="#CBB9DD" stroke-width="1.7"/>
+      </symbol>
+      <symbol id="ic-heartbreak" viewBox="0 0 24 24" fill="none" stroke="#2f2e7e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 19.8c-4.5-2.9-7.3-5.8-7.1-9.5.1-2.3 1.9-3.9 4-3.9 1.5 0 2.6.7 3.1 1.5.5-.8 1.6-1.5 3.1-1.5 2.1 0 3.9 1.6 4 3.9.2 3.7-2.6 6.6-7.1 9.5Z"/>
+        <path d="M12.1 7.3 10.5 10l2.4 1.5-1.9 2.7 1.5 2-1 2.6" stroke-width="1.6"/>
+      </symbol>
+      <symbol id="ic-chat" viewBox="0 0 24 24" fill="none" stroke="#2f2e7e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5.5 5.4c4.4-.4 8.7-.4 13.1 0 .8.1 1.3.6 1.4 1.4.2 2.7.2 5.4 0 8.2-.1.8-.6 1.3-1.4 1.4H9.3c-1.4 1-2.8 2-4.1 3-.3-4.6-.3-9.3.3-14Z"/>
+        <path d="M8.8 10.9c.4-.1.7 0 1 .2M11.6 10.8c.4-.1.7 0 1 .2M14.4 10.9c.4-.1.7 0 1 .2" stroke="#CBB9DD" stroke-width="2.1"/>
+      </symbol>
+      <symbol id="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5.3 12.5c1.6 1.3 3 2.8 4.4 4.3 2.8-3.8 6-7.2 9.2-9.9"/></symbol>
+      <symbol id="ic-dot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7.3 12.2c3.1-.5 6.2-.4 9.4-.2"/></symbol>
+      <symbol id="ic-quote" viewBox="0 0 24 24" fill="currentColor"><path d="M10.3 8.2c-3.1.7-5 3.2-5.1 6.4-.1 1.5 0 2.9.1 4.3 2 .1 4 .1 6-.1.1-2 .1-4-.1-6-1 0-2.1 0-3.1.1.3-1.9 1.1-3 2.5-3.6-.1-.4-.2-.7-.3-1.1Zm8.9 0c-3.1.7-5 3.2-5.1 6.4-.1 1.5 0 2.9.1 4.3 2 .1 4 .1 6-.1.1-2 .1-4-.1-6-1 0-2.1 0-3.1.1.3-1.9 1.1-3 2.5-3.6-.1-.4-.2-.7-.3-1.1Z"/></symbol>
+      <symbol id="ic-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.1 3.3c.9-.1 1.9-.1 2.9 0 .6 1.6 1 3.2 1.4 4.9-.7.8-1.5 1.6-2.3 2.3 1.3 2.9 3.5 5 6.4 6.3.8-.7 1.5-1.5 2.3-2.2 1.6.4 3.2.9 4.8 1.5.1 1 .1 2-.1 3-.1 1-1 1.9-2 1.9C10.1 20.6 3.7 14.2 3.9 5.3c0-1 1-1.9 2.2-2Z"/></symbol>
+      <symbol id="ic-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6c5.7-.5 11.3-.5 17 0 .4 4 .4 8-.1 12-5.6.5-11.2.5-16.8 0-.4-4-.4-8-.1-12Z"/><path d="M3.7 7.1c2.7 2 5.5 3.9 8.3 5.6 2.8-1.8 5.6-3.7 8.3-5.6"/></symbol>
+      <symbol id="ic-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4.4 7.2c5.1-.4 10.2-.4 15.3 0M4.4 12c5.1-.3 10.2-.3 15.3 0M4.4 16.8c5.1-.4 10.2-.4 15.3 0"/></symbol>
+
+      <!-- ===== childish-flare doodles (sparse decoration layer) ===== -->
+      <symbol id="dd-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3.8c.6 3.3 2.3 5 5.7 5.7-3.4.8-5.1 2.5-5.6 5.9-.7-3.4-2.4-5.1-5.8-5.7 3.4-.7 5-2.4 5.7-5.9Z"/>
+      </symbol>
+      <symbol id="dd-squiggle" viewBox="0 0 64 22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <path d="M3.5 14.8c2.6-7 8-7 7.8-.6-.2 4.7 5.2 5.5 7.7.9 2.3-4.3 7-4.1 8.1.4 1 4 5.6 4.1 7.8.4 2.3-3.9 6.5-4.4 9.3-1.5"/>
+      </symbol>
+      <symbol id="dd-dots" viewBox="0 0 34 10" fill="currentColor">
+        <path d="M4.6 3.4c1.1-.3 2 .4 2.1 1.5.1 1.1-.7 2-1.8 2-1 0-1.9-.8-1.9-1.8 0-.8.7-1.5 1.6-1.7Z"/>
+        <path d="M15.9 3.2c1.1-.2 2 .5 2 1.6.1 1.1-.8 1.9-1.8 1.9-1 0-1.8-.7-1.8-1.7-.1-.9.6-1.6 1.6-1.8Z"/>
+        <path d="M27.2 3.5c1.1-.3 2 .4 2.1 1.4.1 1.1-.7 2-1.8 2-1 0-1.8-.8-1.9-1.7 0-.9.7-1.5 1.6-1.7Z"/>
+      </symbol>
+      <symbol id="dd-brush" viewBox="0 0 120 36" fill="currentColor">
+        <path d="M5 22C22 9 52 5.5 82 9.5c15 2 26 6.5 30 12-14 7-38 10.5-62 8.5-17-1.4-33-4.4-45-8Z"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <!-- ============ NAV ============ -->
+  <nav class="nav" id="nav">
+    <div class="container nav__inner">
+      <a href="#home" aria-label="רות פדידה, דף הבית" class="nav__brand">
+        <img class="nav__logo" src="assets/logo-indigo-fit.svg" alt="רות פדידה" />
+      </a>
+      <div class="nav__links" id="navlinks">
+        <a href="#home">בית</a>
+        <a href="#about">עליי</a>
+        <a href="#testimonials">המלצות</a>
+        <a href="#process">התהליך</a>
+        <a href="#learn">מה נלמד</a>
+        <a href="#lectures">הרצאות וסדנאות</a>
+        <a href="#faq">שאלות נפוצות</a>
+      </div>
+      <a href="#contact" class="btn btn--primary nav__cta">לשיחת היכרות</a>
+      <button class="nav__toggle" id="navToggle" aria-label="תפריט" aria-controls="navlinks" aria-expanded="false"><svg><use href="#ic-menu"/></svg></button>
+    </div>
+  </nav>
+
+  <!-- ============ HERO — full-bleed photo, no arch ============ -->
+  <header class="hero" id="home">
+    <div class="hero__bg" role="img" aria-label="אמא וילד: רגע של חום וקרבה"></div>
+    <div class="hero__veil" aria-hidden="true"></div>
+    <svg class="dd" viewBox="0 0 24 24" style="width:26px;height:26px;top:20%;inset-inline-start:45%;color:var(--lav-deep);opacity:.8" aria-hidden="true"><use href="#dd-star"/></svg>
+    <svg class="dd" viewBox="0 0 24 24" style="width:14px;height:14px;top:26%;inset-inline-start:49%;color:var(--pop);opacity:.45" aria-hidden="true"><use href="#dd-star"/></svg>
+
+    <div class="container">
+      <div class="hero__copy">
+        <span class="hero__name">רות פדידה | מדריכת הורים בגישה תורנית</span>
+        <h1>להחזיר לבית סמכות רגועה, קרבה ושיתוף <span class="script">בלי צעקות ובלי רגשות אשמה</span></h1>
+        <p class="hero__sub">ליווי אישי לאמהות שרוצות בית רגוע יותר, ילדים שמקשיבים וקשר חם ובריא.</p>
+        <div class="hero__actions">
+          <a href="#contact" class="btn btn--primary btn--lg">לקביעת שיחת היכרות ללא עלות</a>
+          <a href="#process" class="btn btn--secondary btn--lg">איך התהליך עובד?</a>
+        </div>
+      </div>
+    </div>
+
+    <svg class="wave" viewBox="0 0 1440 84" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0 50C120 18 280 10 440 28C600 46 720 70 900 62C1080 54 1240 22 1440 38V84H0V50Z" fill="#E3EFE8"/>
+    </svg>
+  </header>
+
+  <!-- ============ PROBLEM ============ -->
+  <section class="sec sec--sage" id="problem">
+    <svg class="dd" viewBox="0 0 24 24" style="width:28px;height:28px;top:24%;inset-inline-start:7%;color:var(--sage-deep)" aria-hidden="true"><use href="#dd-star"/></svg>
+    <svg class="dd" viewBox="0 0 34 10" style="width:42px;height:12px;bottom:9%;inset-inline-end:9%;color:var(--lav-deep);opacity:.8" aria-hidden="true"><use href="#dd-dots"/></svg>
+    <div class="container">
+      <div class="sec__head center reveal">
+        <span class="eyebrow">מכירה את זה?</span>
+        <h2 class="sec__title">את נותנת את כל הלב, ועדיין מרגישה שאת נאבקת לבד</h2>
+        <p class="sec__intro">משקיעה, דואגת, מתפללת ונותנת בלי סוף, ובכל זאת יש רגעים שבהם זה פשוט קשה. את לא לבד, וזה לגמרי אפשרי לשנות.</p>
+      </div>
+      <div class="cards cards--sym">
+        <article class="card reveal"><div class="card__ic"><svg><use href="#ic-chat"/></svg></div><h3>מבקשת, והם לא מקשיבים</h3><p>את מבקשת מהילדים שוב ושוב, אבל הם לא מקשיבים?</p></article>
+        <article class="card reveal"><div class="card__ic"><svg><use href="#ic-cloud"/></svg></div><h3>תסכול וחוסר אונים</h3><p>כמה שאת נותנת מעצמך, את מרגישה שהילדים פשוט לא מעריכים ותמיד ירצו עוד?</p></article>
+        <article class="card reveal"><div class="card__ic"><svg><use href="#ic-maze"/></svg></div><h3>הסמכות מתערערת</h3><p>קשה לך לבסס את הסמכות ההורית שלך בבית?</p></article>
+        <article class="card reveal"><div class="card__ic"><svg><use href="#ic-heartbreak"/></svg></div><h3>ריחוק במקום קרבה</h3><p>את מרגישה חוסר קשר של אהבה בינך לבין ילדייך?</p></article>
+      </div>
+      <p class="note reveal">זו לא בעיה של יכולת, זו שאלה של הדרכה נכונה. וברגע שמקבלים אותה, <b>הכול מתחיל להשתנות.</b></p>
+    </div>
+  </section>
+
+  <svg class="wave wave--flip" viewBox="0 0 1440 74" preserveAspectRatio="none" aria-hidden="true" style="background:var(--sage)">
+    <path d="M0 44C140 14 300 8 460 26C620 44 760 64 940 56C1120 48 1280 20 1440 34V74H0V44Z" fill="#FAF4ED"/>
+  </svg>
+
+  <!-- ============ GUIDE / ABOUT ============ -->
+  <section class="sec sec--cream" id="about" style="padding-top:clamp(40px,5vw,70px)">
+    <svg class="dd" viewBox="0 0 64 22" style="width:70px;height:24px;bottom:11%;inset-inline-end:7%;color:var(--lav-deep);opacity:.7" aria-hidden="true"><use href="#dd-squiggle"/></svg>
+    <div class="container guide">
+      <div class="guide__visual reveal">
+        <figure class="guide__frame">
+          <img src="https://assets.cdn.filesafe.space/1MiM5fSFTk2PXM022slI/media/6a4f4f979c9b37b5fdb0fbef.png" alt="רות פדידה, מדריכת הורים" />
+        </figure>
+      </div>
+      <div class="guide__body letter reveal">
+        <svg class="letter__feather" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg>
+        <span class="script letter__hi">נעים להכיר</span>
+        <h2 class="sec__title">אני רות, וגם אני הייתי שם</h2>
+        <p>כאמא צעירה לילדים קטנים מצאתי את עצמי מוצפת, מתוסכלת ובלי כלים ברורים, עד נקודת שבר מול הילדים שלי. השינוי הגיע ממפגש מקרי עם אמא לילדים רגועים ומאוזנים, שדרכו נחשפתי לעולם הדרכת ההורים.</p>
+        <p>הוכשרתי להדרכת הורים בגישתו של הרב יחיאל יעקובזון אצל הרב אברהם ברזילאי, ומאז אני מלווה אמהות ומשפחות בתהליכים אישיים ומעבירה הרצאות בנושאי חינוך ילדים, סמכות, חום ואהבה. את הדרך אני עושה בליווי מקצועי שוטף של מדריך ההורים שלי, <mark class="ph">הרב ניסן [שם מלא, ממתין לאישור רות]</mark>. את השיטה יישמתי קודם כל על המשפחה שלי, וראיתי שינוי אמיתי בבית ובקשר בין הורים לילדים ב״ה</p>
+        <p>עוד לפני עולם הדרכת ההורים ליוויתי נשים בתהליכי שינוי: כמדריכת כושר מוסמכת (מכון וינגייט) ומדריכה בסטודיו C, באימונים אישיים וקבוצתיים ובתהליכי שינוי לאורח חיים בריא.</p>
+        <svg class="sign-ruth" viewBox="643 341 360 112" fill="currentColor" role="img" aria-label="רות"><path d="M852.77,378.38c6.56.23,8.44,1.17,9.61,6.33,1.64,6.8-4.22,9.85-3.05,16.65,0,1.41.7,6.33,1.41,7.97,1.41,3.28,1.41,6.33,5.39,7.97,2.81,1.17.23,5.86-.94,7.03-1.41,1.64-4.22,3.05-6.33,3.05-6.1,0-10.32-2.81-10.32-7.03,0-1.64-2.11-8.68-2.34-10.32-1.41-8.68-1.41-8.21-9.38-5.86-8.91,2.81-18.29,4.46-27.2,7.5-15.71,5.16-31.89,8.68-48.07,11.49-10.55,1.64-20.64,5.16-30.95,7.5-12.9,2.81-25.79,5.16-38.46,7.97-10.79,2.58-21.34,5.63-31.66,8.68-2.58.7-4.46,1.88-7.04,2.81q-2.58.94-5.86,1.17c-.7-.94-1.41-1.41-1.87-2.35-1.17-1.88-2.11-3.75,1.17-5.16,3.75-1.41,7.27-3.75,11.02-4.92,9.85-2.81,20.17-5.16,30.02-7.97,13.84-3.99,27.67-8.21,41.51-11.96,5.39-1.64,11.25-2.11,16.41-3.99,8.44-3.05,37.05-9.61,42.68-11.26,14.07-3.52,28.14-8.44,42.21-14.54,5.63-1.88,10.55-5.63,15.71-8.21,2.58-1.17,5.16-2.11,6.33-2.58Z"/><path d="M883.26,382.83c0,5.39-4.69,6.57-7.27,7.03-1.88.23-5.63-3.52-5.86-5.63-.47-2.11,2.81-6.8,4.22-6.8,2.81,0,8.91,0,8.91,5.39Z"/><path d="M898.74,357.51c2.58,15.01,5.39,32.83,7.27,46.2.47,3.52.23,7.03-.7,10.32-.47,2.11-2.11,4.46-3.99,5.86-3.52,2.58-6.56,1.41-7.27-3.28-1.88-10.32-3.28-20.64-5.39-30.95-1.64-7.97-4.69-20.17-7.04-27.91-.7-2.35-1.64-4.69-2.11-7.04-.7-2.81.7-4.92,3.05-6.33,2.34-1.17,4.22-2.11,7.03-.47,5.86,3.52,9.38,8.21,9.15,13.6Z"/><path d="M997.23,422.23c-1.64,2.35-3.28,3.75-6.1,3.28-2.58-.47-2.11-4.92-.7-6.33,1.17-1.17,1.17-2.81.7-5.16,0-7.27-6.56-18.52-11.25-24.15-12.19-14.07-27.67-17.82-45.49-14.3-3.28.7-6.56,1.64-10.08,2.11-.7.23-1.88-.47-2.11-.94-.23-.94-.47-2.81.23-3.28,7.03-5.86,13.6-11.72,23.92-11.72,12.19.47,23.68,2.81,33.53,10.55l2.81,2.11c7.97,6.57,12.43,13.37,16.88,25.33,4.69,11.96,1.17,17.82-2.35,22.51Z"/></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TESTIMONIALS (moved up per review: right after About) ============ -->
+  <section class="sec sec--cream" id="testimonials" style="padding-top:clamp(40px,5vw,70px)">
+    <svg class="dd" viewBox="0 0 64 22" style="width:66px;height:23px;top:10%;inset-inline-start:9%;color:var(--sage-deep);opacity:.85" aria-hidden="true"><use href="#dd-squiggle"/></svg>
+    <div class="container">
+      <div class="sec__head center reveal">
+        <span class="eyebrow">אמהות מספרות</span>
+        <h2 class="sec__title">שינוי שמרגישים בבית</h2>
+      </div>
+      <div class="quotes">
+        <figure class="quote reveal"><svg class="quote__mark"><use href="#ic-quote"/></svg><p>אני הרבה יותר בשליטה, כבר לא מפחדת להעניק משמעת לילדים, לא נלחצת מכל בכי או כעס של הילדים, ובעיקר הבית הפך להרבה יותר רגוע אוהב נעים, שזה הכי היה הכרחי.</p><figcaption class="quote__by"><span class="quote__av">ל</span><span><b>ליאל מ׳</b> <mark class="ph" style="font-weight:400;font-size:12.5px">אמא ל־__, גילאי __ (ממתין לאישור הממליצה)</mark></span></figcaption></figure>
+        <figure class="quote reveal"><svg class="quote__mark"><use href="#ic-quote"/></svg><p>קיבלתי ממנה כלים פשוטים, מעשיים ובעיקר גישה חדשה. רות ידעה להקשיב באמת, לשאול את השאלות הנכונות, ולתת כלים מעשיים ליום יום. הרגשתי שיש לי כתובת.</p><figcaption class="quote__by"><span class="quote__av">א</span><span><b>אדר א׳</b> <mark class="ph" style="font-weight:400;font-size:12.5px">אמא ל־__, גילאי __ (ממתין לאישור הממליצה)</mark></span></figcaption></figure>
+        <figure class="quote reveal"><svg class="quote__mark"><use href="#ic-quote"/></svg><p>בעזרת הכלים וההכוונה שקיבלנו מרות, הצלחנו לראות שיפור ניכר באווירה המשפחתית וביחסים עם ילדנו. אני ממליצה בחום על הגברת רות פדידה לכל הורה המבקש לגדל את ילדיו מתוך חינוך אמיתי, סמכות שקטה ואהבה.</p><figcaption class="quote__by"><span class="quote__av">ח</span><span><b>חנה צ׳</b> <mark class="ph" style="font-weight:400;font-size:12.5px">אמא ל־__, גילאי __ (ממתין לאישור הממליצה)</mark></span></figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROCESS ============ -->
+  <section class="sec sec--lav" id="process">
+    <svg class="dd" viewBox="0 0 120 36" style="top:112px;inset-inline:0;margin-inline:auto;width:min(330px,64%);height:98px;color:#ffffff;opacity:.5" aria-hidden="true" preserveAspectRatio="none"><use href="#dd-brush"/></svg>
+    <svg class="dd" viewBox="0 0 24 24" style="width:26px;height:26px;top:11%;inset-inline-start:8%;color:var(--lav-deep);opacity:.85" aria-hidden="true"><use href="#dd-star"/></svg>
+    <svg class="dd" viewBox="0 0 24 24" style="width:13px;height:13px;top:15%;inset-inline-start:11%;color:var(--pop);opacity:.45" aria-hidden="true"><use href="#dd-star"/></svg>
+    <div class="container">
+      <div class="sec__head center reveal">
+        <span class="eyebrow">התהליך</span>
+        <h2 class="sec__title">שלושה צעדים לשינוי אמיתי</h2>
+        <p class="sec__intro">דרך ברורה ומלווה, בלי ניחושים, ובלי לעשות את זה לבד.</p>
+      </div>
+      <div class="steps">
+        <article class="step reveal"><span class="step__n">1</span><div class="step__ic"><svg><use href="#ic-chat"/></svg></div><h3>שיחת היכרות</h3><p>שיחת היכרות ראשונה ללא עלות וללא התחייבות. נבין יחד מה קורה בבית.</p></article>
+        <article class="step reveal"><span class="step__n">2</span><div class="step__ic"><svg><use href="#ic-notebook"/></svg></div><h3>לומדים לעומק</h3><p>בתהליך אישי נבין יחד מה הבית שלך צריך, ונבנה בסיס בריא ויציב לחינוך.</p></article>
+        <article class="step reveal"><span class="step__n">3</span><div class="step__ic"><svg><use href="#ic-crown"/></svg></div><h3>תכנית מותאמת אישית</h3><p>נתאים עבור משפחתך תכנית מפורטת שתכוון את הקשר שלך עם ילדייך להצלחה, ותיתן לילדייך ארגז כלים בריא לחיים בעולם.</p></article>
+      </div>
+
+      <!-- v5: practical "what the process looks like" box (reviewer item 3; facts from the founder call) -->
+      <div class="howbox reveal">
+        <h3>איך נראה התהליך?</h3>
+        <ul>
+          <li><svg><use href="#ic-check"/></svg><span>פגישות אישיות של <mark class="ph">___ דקות (ממתין לרות)</mark>, בטלפון או בזום, מכל מקום.</span></li>
+          <li><svg><use href="#ic-check"/></svg><span>מתחילים בסדרה של ארבע פגישות ראשונות, בקביעות: באותו יום ובאותה שעה מדי שבוע.</span></li>
+          <li><svg><use href="#ic-check"/></svg><span>בין הפגישות תקבלי משימות מעשיות והכוונה למצבים שעולים בבית, בטלפון ובמייל.</span></li>
+          <li><svg><use href="#ic-check"/></svg><span>התהליך מתאים להורים לילדים בגילאי <mark class="ph">___ (ממתין לרות)</mark>.</span></li>
+        </ul>
+      </div>
+
+      <div class="process__cta reveal"><a href="#contact" class="btn btn--primary btn--lg">לקביעת שיחת היכרות ללא עלות</a></div>
+    </div>
+  </section>
+
+  <svg class="wave" viewBox="0 0 1440 74" preserveAspectRatio="none" aria-hidden="true" style="background:#F1EAF8">
+    <path d="M0 44C140 14 300 8 460 26C620 44 760 64 940 56C1120 48 1280 20 1440 34V74H0V44Z" fill="#FAF4ED"/>
+  </svg>
+
+  <!-- ============ VALUES ============ -->
+  <section class="sec sec--cream" id="values" style="padding-top:clamp(40px,5vw,70px);overflow:hidden">
+    <svg class="house-bg" viewBox="0 0 120 112" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+      <path d="M14 55 L60 15 L106 55"/>
+      <path d="M26 50 L26 99 L94 99 L94 50"/>
+      <path d="M48 99 L48 75 C48 66 55 62 60 62 C65 62 72 66 72 75 L72 99"/>
+      <path d="M60 40 C56 33 46 36 46 43 C46 50 55 54 60 60 C65 54 74 50 74 43 C74 36 64 33 60 40 Z" stroke-width="3.4"/>
+    </svg>
+    <div class="container">
+      <div class="sec__head center reveal">
+        <span class="eyebrow eyebrow--sage">הגישה</span>
+        <h2 class="sec__title">בית בריא נבנה <span class="script mark" style="font-size:1.15em">מהמינון הנכון<svg class="paint" viewBox="0 0 300 34" preserveAspectRatio="none" aria-hidden="true"><path d="M6 24C40 10 96 8 150 13C204 18 260 14 294 20C260 24 200 28 148 26C96 24 40 28 6 24Z" fill="#F6DDE6"/></svg></span></h2>
+        <p class="sec__intro">בדיוק כפי שבונים בית צריך שתהיה כמות מדויקת של מלט ומים, ואם הכמויות אינן מדויקות הבית ייבנה פשוט לא נכון. באותה מידה המינונים של כל יסודות הבית צריכים להיות נכונים כדי לבנות בית בריא וטוב עבור הילד.</p>
+      </div>
+      <div class="values">
+        <div class="value reveal"><div class="value__ic"><svg><use href="#ic-love"/></svg></div><span>חום ואהבה</span></div>
+        <div class="value reveal"><div class="value__ic"><svg><use href="#ic-growth"/></svg></div><span>עידוד</span></div>
+        <div class="value reveal"><div class="value__ic"><svg><use href="#ic-fence"/></svg></div><span>משמעת</span></div>
+        <div class="value reveal"><div class="value__ic"><svg><use href="#ic-seesaw"/></svg></div><span>איזון</span></div>
+        <div class="value reveal"><div class="value__ic"><svg><use href="#ic-compass"/></svg></div><span>הכוונה</span></div>
+        <div class="value reveal"><div class="value__ic"><svg><use href="#ic-path"/></svg></div><span>דרך ארץ</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CURRICULUM / מה נלמד יחד ============ -->
+  <section class="sec sec--lav" id="learn">
+    <svg class="dd" viewBox="0 0 34 10" style="width:44px;height:13px;top:11%;inset-inline-end:8%;color:var(--lav-deep);opacity:.75" aria-hidden="true"><use href="#dd-dots"/></svg>
+    <svg class="dd" viewBox="0 0 24 24" style="width:24px;height:24px;bottom:12%;inset-inline-start:7%;color:var(--pop);opacity:.4" aria-hidden="true"><use href="#dd-star"/></svg>
+    <div class="container">
+      <div class="sec__head center reveal">
+        <span class="eyebrow">בפגישות</span>
+        <h2 class="sec__title">איזה ידע ארוויח מהפגישות?</h2>
+      </div>
+      <div class="cards cards--learn">
+        <article class="card reveal"><div class="card__ic"><svg><use href="#ic-love"/></svg></div><h3>חום ואהבה</h3><p>מהם הזמנים הטובים ביותר לתת ומתי לא? איך נוכל להשתמש באהבה כדי לדרבן את הילד לפעול ממקום בריא?</p></article>
+        <article class="card reveal"><div class="card__ic"><svg><use href="#ic-spark"/></svg></div><h3>עידוד</h3><p>מהו עידוד נכון? באילו מצבים צריך לעודד ומתי ממש לא.</p></article>
+        <article class="card reveal"><div class="card__ic"><svg><use href="#ic-fence"/></svg></div><h3>משמעת</h3><p>איך בונים אותה? איך להגדיל משמעותית את שיתוף הפעולה של הילדים?</p></article>
+        <article class="card reveal"><div class="card__ic"><svg><use href="#ic-crown"/></svg></div><h3>דימוי עצמי</h3><p>איך בונים לילד דימוי עצמי בריא?</p></article>
+        <article class="card reveal"><div class="card__ic"><svg><use href="#ic-path"/></svg></div><h3>התניה חיובית</h3><p>כיצד לעודד את הילד לפעול לפי הערכים שאני רוצה להנחיל בו?</p></article>
+        <article class="card reveal"><div class="card__ic"><svg><use href="#ic-growth"/></svg></div><h3>אווירה בבית</h3><p>איך הופכים את האווירה בבית לאווירה רגועה, נעימה ושמחה יותר, לך ולילדייך?</p></article>
+        <article class="card reveal"><div class="card__ic"><svg><use href="#ic-seesaw"/></svg></div><h3>ענישה</h3><p>מהי ענישה נכונה? איך לבוא ממקום נכון עבור הילד?</p></article>
+        <article class="card reveal"><div class="card__ic"><svg><use href="#ic-compass"/></svg></div><h3>מיקוד</h3><p>מה נחשב חינוך באמת? על מה בחינוך שווה להתמקד ומה פשוט עדיף לעזוב?</p></article>
+      </div>
+      <div class="process__cta reveal"><a href="#contact" class="btn btn--primary btn--lg">לקביעת שיחת היכרות ללא עלות</a></div>
+    </div>
+  </section>
+
+  <!-- ============ TRANSFORMATION ============ -->
+  <section class="sec sec--sage" id="results">
+    <svg class="dd" viewBox="0 0 34 10" style="width:40px;height:12px;top:13%;inset-inline-end:8%;color:var(--lav-deep);opacity:.75" aria-hidden="true"><use href="#dd-dots"/></svg>
+    <div class="container">
+      <div class="sec__head center reveal">
+        <span class="eyebrow eyebrow--blush">מהיום שתתחילי</span>
+        <h2 class="sec__title">איך נראה הבית שלך אחרי התהליך</h2>
+      </div>
+      <ul class="outcomes">
+        <li class="outcome reveal"><span class="mk"><svg><use href="#ic-check"/></svg></span>לבנות בהדרגה אווירה רגועה ונעימה יותר בבית.</li>
+        <li class="outcome reveal"><span class="mk"><svg><use href="#ic-check"/></svg></span>המשמעת והסמכות בבית יעלו, ואת תרוויחי ילדים רגועים ושמחים.</li>
+        <li class="outcome reveal"><span class="mk"><svg><use href="#ic-check"/></svg></span>הילדים יתחילו לשתף אותך בחוויות שלהם, ולראות בך מקום בטוח להישען עליו.</li>
+        <li class="outcome reveal"><span class="mk"><svg><use href="#ic-check"/></svg></span>לקבל כלים שיעזרו לך להגיב בביטחון גם כשהילד אינו משתף פעולה.</li>
+        <li class="outcome reveal"><span class="mk"><svg><use href="#ic-check"/></svg></span>במקרים רבים אפשר להתחיל להרגיש שינוי כבר בתחילת התהליך.</li>
+        <li class="outcome reveal"><span class="mk"><svg><use href="#ic-check"/></svg></span>והכי חשוב: את תהיי מחוברת למקום האוהב שלך מול הילדים, במקום להרגיש תסכול.</li>
+      </ul>
+    </div>
+  </section>
+
+  <svg class="wave wave--flip" viewBox="0 0 1440 74" preserveAspectRatio="none" aria-hidden="true" style="background:var(--sage)">
+    <path d="M0 44C140 14 300 8 460 26C620 44 760 64 940 56C1120 48 1280 20 1440 34V74H0V44Z" fill="#FAF4ED"/>
+  </svg>
+
+  <!-- ============ LECTURES & WORKSHOPS (v5 mockup — content pending Ruth) ============ -->
+  <section class="sec sec--cream" id="lectures" style="padding-top:clamp(40px,5vw,70px)">
+    <svg class="dd" viewBox="0 0 34 10" style="width:42px;height:12px;top:10%;inset-inline-start:8%;color:var(--lav-deep);opacity:.7" aria-hidden="true"><use href="#dd-dots"/></svg>
+    <div class="container">
+      <div class="sec__head center reveal">
+        <span class="eyebrow eyebrow--sage">מעבר לליווי האישי</span>
+        <h2 class="sec__title">הרצאות וסדנאות</h2>
+        <p class="sec__intro">הרצאות לערבי נשים, ראשי חודש, מוסדות וקהילות, וסדנאות של כמה מפגשים בנושאי חינוך ילדים, סמכות, חום ואהבה. <mark class="ph">נושאי ההרצאות המלאים (ממתין לרות)</mark></p>
+      </div>
+      <div class="cards cards--sym">
+        <article class="card reveal">
+          <div class="media-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 5.2c4.4-.4 8.8-.4 13.2 0 .8.1 1.3.6 1.4 1.4.2 3.5.2 7 0 10.6-.1.8-.6 1.3-1.4 1.4-4.4.4-8.8.4-13.2 0-.8-.1-1.3-.6-1.4-1.4-.2-3.6-.2-7.1 0-10.6.1-.8.6-1.3 1.4-1.4Z"/><path d="M10.2 9.3c1.6.8 3.1 1.7 4.6 2.7-1.5 1-3 1.9-4.6 2.7-.1-1.8-.1-3.6 0-5.4Z" fill="currentColor"/></svg><span>סרטון הרצאה (בקרוב)</span></div>
+          <h3>הרצאות מצולמות</h3><p><mark class="ph">קטעי וידאו מהרצאות (ממתין לחומרים מרות)</mark></p>
+        </article>
+        <article class="card reveal">
+          <div class="media-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.2c-2 0-3.5 1.5-3.5 3.5v4.5c0 2 1.5 3.5 3.5 3.5s3.5-1.5 3.5-3.5V7.7c0-2-1.5-3.5-3.5-3.5Z"/><path d="M6 12.2c.1 3.4 2.7 5.9 6 5.9s5.9-2.5 6-5.9M12 18.4v2.4"/></svg><span>הקלטה (בקרוב)</span></div>
+          <h3>הקלטות שיעורים</h3><p><mark class="ph">הקלטות שמע משיעורים וסדנאות (ממתין לחומרים מרות)</mark></p>
+        </article>
+        <article class="card reveal">
+          <div class="media-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4.5c4-.4 8-.4 12 0 .3 5 .3 10 0 15-4 .4-8 .4-12 0-.3-5-.3-10 0-15Z"/><path d="M9 9.2c2-.1 4-.1 6 0M9 12.5c2-.1 4-.1 6 0M9 15.8c1.4-.1 2.7-.1 4.1 0"/></svg><span>מאמר (בקרוב)</span></div>
+          <h3>מאמרים</h3><p><mark class="ph">מאמרים בכתיבתה של רות (ממתין לחומרים)</mark></p>
+        </article>
+      </div>
+      <div class="process__cta reveal"><a href="#contact" class="btn btn--primary btn--lg">להזמנת הרצאה</a></div>
+    </div>
+  </section>
+
+  <!-- ============ FAQ (v5 — answers grounded in the founder call; two pending Ruth) ============ -->
+  <section class="sec sec--lav" id="faq">
+    <div class="container">
+      <div class="sec__head center reveal">
+        <span class="eyebrow">שאלות נפוצות</span>
+        <h2 class="sec__title">מה עוד חשוב לדעת?</h2>
+      </div>
+      <div class="faq reveal">
+        <details><summary>איך מתקיימות הפגישות?</summary><p>הפגישות מתקיימות בטלפון או בזום, כך שאפשר להצטרף מכל מקום.</p></details>
+        <details><summary>איך בנוי התהליך?</summary><p>מתחילים בסדרה של ארבע פגישות ראשונות, בקביעות: באותו יום ובאותה שעה מדי שבוע. רוב המשפחות בוחרות להמשיך גם אחרי הסדרה הראשונה.</p></details>
+        <details><summary>מה קורה בין הפגישות?</summary><p>את לא נשארת לבד: בין הפגישות תקבלי משימות מעשיות, ואני זמינה בטלפון ובמייל להכוונה למצבים שעולים בבית.</p></details>
+        <details><summary>ההדרכה מתאימה רק לציבור הדתי?</summary><p>לא. הגישה מגיעה מעולם תורני, אבל הכלים עצמם מתאימים לכל אמא ולכל בית.</p></details>
+        <details><summary>לאילו גילאים ההדרכה מתאימה?</summary><p><mark class="ph">ממתין לרות: טווח הגילאים</mark></p></details>
+        <details><summary>האם שני ההורים צריכים להשתתף?</summary><p><mark class="ph">ממתין לרות: מי משתתף בפגישות</mark></p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FINAL CTA ============ -->
+  <section class="sec sec--lav cta-final" id="contact">
+    <div class="container">
+      <div class="cta-card reveal">
+        <svg class="dd" viewBox="0 0 24 24" style="width:22px;height:22px;top:20px;inset-inline-start:26px;color:var(--lav-deep);opacity:.85" aria-hidden="true"><use href="#dd-star"/></svg>
+        <svg class="dd" viewBox="0 0 24 24" style="width:14px;height:14px;bottom:24px;inset-inline-end:30px;color:var(--pop);opacity:.5" aria-hidden="true"><use href="#dd-star"/></svg>
+        <span class="tag">הצעד הראשון</span>
+        <h2 class="sec__title">הגיע הזמן לחינוך שנעים לך לחיות איתו</h2>
+        <p>עם ליווי מקצועי, נשי, תורני, שמדבר ללב שלך. השאירי פרטים ואחזור אלייך לשיחת היכרות ראשונה, ללא עלות וללא התחייבות.</p>
+        <!-- Lead form → posts to a GoHighLevel Inbound Webhook. Paste the URL into data-webhook below. -->
+        <form id="contactForm" class="cform reveal" data-webhook="https://services.leadconnectorhq.com/hooks/1MiM5fSFTk2PXM022slI/webhook-trigger/9bfa5d01-3262-4f0d-8d1b-2de93d870f0f" novalidate>
+          <div class="cform__row">
+            <input class="cform__in" name="name" type="text" placeholder="שם מלא" required />
+            <input class="cform__in" name="phone" type="tel" inputmode="tel" placeholder="טלפון לחזרה" required />
+          </div>
+          <input class="cform__in" name="email" type="email" inputmode="email" autocomplete="email" placeholder="אימייל" required />
+          <textarea class="cform__in cform__ta" name="msg" placeholder="כמה מילים על מה שקורה בבית (לא חובה)" rows="3"></textarea>
+          <button type="submit" class="btn btn--primary btn--lg cform__btn">שליחת פרטים</button>
+        </form>
+        <div id="formThanks" class="cform__thanks" hidden><strong>תודה!</strong> קיבלתי את הפרטים — אחזור אלייך בהקדם 💜</div>
+        <p id="formError" class="cform__err" hidden>אופס, משהו השתבש בשליחה. אפשר לנסות שוב, או לכתוב לי ישירות למייל שלמטה.</p>
+        <span class="script cform__sign">באהבה, רות</span>
+        <a href="mailto:r@ruthfadida.com" class="contactline cform__mail"><svg><use href="#ic-mail"/></svg>או כתבו לי למייל: r@ruthfadida.com</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__top">
+        <div>
+          <img class="footer__logo" src="assets/logo-indigo-fit.svg" alt="רות פדידה" />
+          <p class="footer__tag">הורות עם משמעות: ליווי הורי שמחבר בין חום ואהבה לגבולות ברורים.</p>
+        </div>
+        <div>
+          <h4>ניווט</h4>
+          <ul class="footer__links">
+            <li><a href="#about">עליי</a></li>
+            <li><a href="#testimonials">המלצות</a></li>
+            <li><a href="#process">התהליך</a></li>
+            <li><a href="#learn">מה נלמד</a></li>
+            <li><a href="#lectures">הרצאות וסדנאות</a></li>
+            <li><a href="#faq">שאלות נפוצות</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>יצירת קשר</h4>
+          <ul class="footer__contact">
+            <li><a href="mailto:r@ruthfadida.com"><svg><use href="#ic-mail"/></svg>r@ruthfadida.com</a></li>
+            <li><a href="#contact"><svg><use href="#ic-chat"/></svg>השאירי פרטים ואחזור אלייך</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <span>© 2026 רות פדידה · הורות עם משמעות</span>
+        <span>נבנה באהבה 💜</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // nav: frosted background on scroll
+    const nav = document.getElementById('nav');
+    const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 24);
+    onScroll(); window.addEventListener('scroll', onScroll, { passive:true });
+
+    // mobile menu toggle
+    const toggle = document.getElementById('navToggle');
+    const setMenu = (open) => {
+      nav.classList.toggle('open', open);
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    toggle.addEventListener('click', () => setMenu(!nav.classList.contains('open')));
+    document.getElementById('navlinks').addEventListener('click', e => {
+      if (e.target.tagName === 'A') setMenu(false);
+    });
+
+    // reveal on scroll
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(en => { if (en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+    }, { threshold:0.12, rootMargin:'0px 0px -40px 0px' });
+    document.querySelectorAll('.reveal').forEach((el,i) => {
+      el.style.transitionDelay = (i % 4 * 60) + 'ms';
+      io.observe(el);
+    });
+
+    // contact form → sends the lead to a GoHighLevel Inbound Webhook (URL is on the form's data-webhook)
+    const cf = document.getElementById('contactForm');
+    const thanks = document.getElementById('formThanks');
+    const errBox = document.getElementById('formError');
+    if (cf) cf.addEventListener('submit', async e => {
+      e.preventDefault();
+      const g = n => (cf.elements[n] && cf.elements[n].value || '').trim();
+      const name = g('name'), phone = g('phone'), email = g('email'), msg = g('msg');
+      if (!name || !phone || !email || !email.includes('@')){ (cf.elements[!name ? 'name' : !phone ? 'phone' : 'email']).focus(); return; }
+      const url = cf.dataset.webhook || '';
+      const btn = cf.querySelector('button[type="submit"]');
+      const label = btn.textContent; btn.disabled = true; btn.textContent = 'שולח…';
+      if (errBox) errBox.hidden = true;
+      try {
+        if (!url || url.indexOf('PASTE') === 0) throw new Error('webhook not set');
+        // GHL requires application/json (it rejects a text/plain body outright). Its webhook
+        // sends CORS headers, so we POST cross-origin and READ the reply — success shows only
+        // when GHL actually accepts the lead (no more false "sent" on a rejected payload).
+        const res = await fetch(url, { method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify({ name, phone, email, message: msg, source: 'אתר רות פדידה — טופס יצירת קשר' }) });
+        if (!res.ok) throw new Error('webhook http ' + res.status);
+        if (/"status"\s*:\s*"Error/i.test(await res.text())) throw new Error('webhook rejected payload');
+        cf.hidden = true;
+        if (thanks) thanks.hidden = false;
+      } catch (err) {
+        btn.disabled = false; btn.textContent = label;
+        if (errBox) errBox.hidden = false;
+      }
+    });
+  </script>
+
+  <!-- Website Review widget (draft board: ruth-v5-draft) -->
+  <script>window.WR_CONFIG={supabaseUrl:"https://vfdhlrikxcdturtvyxel.supabase.co",supabaseAnon:"sb_publishable_fwm9wkESvRdRLFNcnDC64A_vkpcdELa",projectKey:"ruth-v5-draft"};</script>
+  <script src="https://yoniversefilms.github.io/website-review/embed.js" defer></script>
+</body>
+</html>

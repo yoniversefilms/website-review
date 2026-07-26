@@ -6,9 +6,17 @@
       "board": "ruthpedida.co.il",
       "out": "/Users/yonatanresnick/Documents/Ruth/Website/reviews/ruth"
     },
+    "ruth-v5": {
+      "board": "ruth-v5-draft",
+      "out": "/Users/yonatanresnick/Documents/Ruth/reviews/ruth-v5-draft"
+    },
     "lovedust": {
       "board": "lovedustfilms.com",
       "out": "/Users/yonatanresnick/Documents/pixeldust-lovedust/reviews/lovedustfilms.com"
+    },
+    "abby": {
+      "board": "abby-resnick",
+      "out": "/Users/yonatanresnick/Documents/Abby-claude/reviews/abby"
     }
   }
 }
