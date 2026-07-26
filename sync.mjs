@@ -12,7 +12,8 @@
  * AUTO-DISCOVERY (the "I never tell Claude which site" mode):
  *   Put the Supabase SECRET key in a gitignored file so this local script can
  *   enumerate every board. Any of, in priority order:
- *     - env  WR_SECRET_KEY=sb_secret_...
+ *     - .env  (repo root)           -> WR_SECRET_KEY=sb_secret_...   <- preferred
+ *     - env   WR_SECRET_KEY=sb_secret_...
  *     - reviews/secret.local.json   -> { "secretKey": "sb_secret_..." }
  *   The secret key bypasses RLS — it is for backend use ONLY. NEVER put it in
  *   the browser, config.js, or any committed file. (config.js keeps the PUBLIC
@@ -32,6 +33,10 @@ import path from "node:path";
 
 const ALLOWED_STATUSES = ["open", "resolved", "wont_fix"];
 const HERE = path.dirname(fileURLToPath(import.meta.url));
+
+// ---- .env (gitignored) so local secrets live in ONE place ----
+try { process.loadEnvFile(path.join(HERE, ".env")); } catch (e) {}
+
 const args = process.argv.slice(2);
 const flags = args.filter((a) => a.startsWith("--"));
 const positional = args.filter((a) => !a.startsWith("--"));
