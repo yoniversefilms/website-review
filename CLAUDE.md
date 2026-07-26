@@ -22,6 +22,8 @@ Repo: github.com/yoniversefilms/website-review.
 ## Rules
 - The capability URL IS the permission — no login flows, don't add any.
 - Test against a real page render, not just the schema (pins are position-sensitive).
+  A browser is wired for this: `.mcp.json` → chrome-devtools-mcp (see docs/OPERATIONS.md
+  "Browser connection"). Viewport is pinned to 1440x900 — don't change it per-call.
 
 ## State stamping
 `tower/status.json` is machine-written for the session dashboard. Don't edit; don't commit.
