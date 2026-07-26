@@ -1,5 +1,8 @@
 # Website Review Widget — session onboarding
 
+Operating the system (links, loop, new-client wiring): docs/OPERATIONS.md.
+Working a board's fix queue: the fix-queue skill (`/fix-queue <slug>`).
+
 Reusable no-login visual-feedback tool: a reviewer opens a capability URL, drops pins/notes
 on the live page, feedback syncs into the repo as files a session turns into fixes. Built
 against the Ruth site first; also packaged as a GoHighLevel block (`ghl-review-block.html`).

@@ -100,7 +100,10 @@ if (PUSH) {
     bad.forEach((n) => console.error(`  #${n.num} ${n.id} -> "${n.status}"`));
     process.exit(1);
   }
-  const remoteRows = (await api(`/notes?project_key=eq.${q(board)}&select=id,status,resolution,updated_at`, board)) || [];
+  // Select EVERY column that stKey() compares — omitting one (disposition, flag_reason)
+  // makes stKey(remote) differ from the base whenever that column is non-null, which
+  // reads as "changed remotely" and false-conflicts the note forever.
+  const remoteRows = (await api(`/notes?project_key=eq.${q(board)}&select=id,status,resolution,disposition,flag_reason,updated_at`, board)) || [];
   const remote = Object.fromEntries(remoteRows.map((r) => [r.id, r]));
 
   let pushed = 0, skipped = 0, conflicts = 0, gone = 0;

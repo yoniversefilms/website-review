@@ -32,6 +32,12 @@
   .addrow input{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:11px 13px;font:14px var(--sans)}
   .addrow input::placeholder{color:#5b6880}
   /* tabs */
+  .sites{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+  .schip{background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:9px;padding:8px 13px;font:600 12.5px/1 var(--sans);display:inline-flex;gap:7px;align-items:center;cursor:pointer}
+  .schip .n{background:var(--panel2);border-radius:999px;padding:1px 7px;font-size:10.5px}
+  .schip.on{background:#1b1533;border-color:var(--accent2);color:#e6ddff}
+  .schip.on .n{background:rgba(124,92,255,.25);color:#ddd2ff}
+  .schip .x{opacity:.45;font-size:11px;padding:0 1px} .schip .x:hover{opacity:1;color:var(--danger)}
   .tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
   .tab{background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:999px;padding:9px 16px;font:600 13px/1 var(--sans);display:inline-flex;gap:8px;align-items:center}
   .tab .n{background:var(--panel2);border-radius:999px;padding:1px 8px;font-size:11px}
@@ -186,6 +192,7 @@
     <div id="bBody" style="display:none"><div id="prList"></div></div>
   </div>
 
+  <div class="sites" id="sites"></div>
   <div class="tabs" id="tabs"></div>
 
   <div class="main">
@@ -275,9 +282,11 @@
     { key:"flagged",   label:"Flagged" },
   ];
   var activeTab = "under";
+  var activeSite = "all";       // "all" or a board key — one tab per site
   var showParked = false;
   var selected = null;          // {board, id}
   var ALL = [];                 // [{board, notes, comments, error}]
+  function visible(){ return activeSite==="all" ? ALL : ALL.filter(function(r){ return r.board===activeSite; }); }
 
   /* ---------- helpers ---------- */
   function layoutOf(n){ var w=n.viewport_w||0; return w ? (w<768?"📱":"💻") : ""; }
@@ -561,10 +570,41 @@
   }
 
   /* ---------- render: tabs ---------- */
+  function renderSites(){
+    var bar = $("#sites"); bar.innerHTML = "";
+    var list = boards();
+    if(list.length < 2 && activeSite==="all"){ return; }          // one site — no chrome needed
+    if(activeSite!=="all" && list.indexOf(activeSite)<0) activeSite="all";
+    function openCount(b){
+      var r = ALL.filter(function(x){ return x.board===b; })[0];
+      return r ? r.notes.filter(function(n){ return n.status==="open"; }).length : 0;
+    }
+    function chip(key, label, count){
+      var c = el("button","schip"+(activeSite===key?" on":""));
+      c.appendChild(el("span",null,label));
+      if(count!=null) c.appendChild(el("span","n",String(count)));
+      if(key!=="all"){
+        var x = el("span","x","✕"); x.title = "Remove this site from the dashboard (notes stay in Supabase)";
+        x.addEventListener("click",function(ev){
+          ev.stopPropagation();
+          if(!confirm("Remove “"+key+"” from this dashboard?\n(Only the list in this browser — no notes are deleted.)")) return;
+          saveBoards(boards().filter(function(b){ return b!==key; }));
+          if(activeSite===key) activeSite="all";
+          selected=null; load(); render();
+        });
+        c.appendChild(x);
+      }
+      c.addEventListener("click",function(){ activeSite=key; selected=null; render(); });
+      bar.appendChild(c);
+    }
+    chip("all","All sites", ALL.reduce(function(s,r){ return s + r.notes.filter(function(n){ return n.status==="open"; }).length; },0));
+    list.forEach(function(b){ chip(b, b, openCount(b)); });
+  }
+
   function renderTabs(){
     var bar = $("#tabs"); bar.innerHTML = "";
     var counts = { under:0, scheduled:0, built:0, flagged:0, parked:0 };
-    ALL.forEach(function(r){ r.notes.forEach(function(n){ counts[tabOf(n)]++; }); });
+    visible().forEach(function(r){ r.notes.forEach(function(n){ counts[tabOf(n)]++; }); });
     TABS.forEach(function(t){
       var b = el("button","tab"+(t.key==="flagged"?" flagged":"")+(activeTab===t.key?" on":""));
       b.appendChild(el("span",null,t.label));
@@ -582,7 +622,7 @@
     var wrap = $("#list"); wrap.innerHTML = "";
     var tab = showParked ? "parked" : activeTab;
     var any = false, anyBoards = false;
-    ALL.forEach(function(r){
+    visible().forEach(function(r){
       anyBoards = true;
       var items = r.notes.filter(function(n){ return tabOf(n)===tab; })
         .sort(function(a,b){ return (a.updated_at||a.created_at||"") < (b.updated_at||b.created_at||"") ? 1 : -1; });
@@ -729,7 +769,7 @@
     d.appendChild(acts);
   }
 
-  function render(){ renderTabs(); renderList(); renderDrawer(); }
+  function render(){ renderSites(); renderTabs(); renderList(); renderDrawer(); }
 
   /* ---------- load + live polling ---------- */
   var loading=false;
