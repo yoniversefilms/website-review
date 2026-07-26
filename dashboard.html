@@ -351,7 +351,8 @@
   // A board key is usually the site's domain, but an explicit key ("ruth-v5-draft") is not a
   // host — fall back to the site_host the widget registered. page_url is pathname(+hash), so
   // the query has to go BEFORE the fragment. Opened from the owner console ⇒ owner tools on.
-  function reviewLink(r, page){
+  // noteId (optional) => the widget scrolls to that pin on arrival (embed.js ?wrnote).
+  function reviewLink(r, page, noteId){
     // Prefer a board key that IS a domain; then the registered site_host, but only if it
     // looks like a host (the shipped widget writes site_host = BOARD, so it's often not);
     // finally assume the page sits on this dashboard's own origin — true for drafts served
@@ -369,7 +370,7 @@
     var p = page && page!=="/" ? String(page) : "/";
     var h = p.indexOf("#"), frag = h>=0 ? p.slice(h) : "";
     if (h>=0) p = p.slice(0,h) || "/";
-    return base+p+(p.indexOf("?")>=0?"&":"?")+"review=1&owner=1"+frag;
+    return base+p+(p.indexOf("?")>=0?"&":"?")+"review=1&owner=1"+(noteId?"&wrnote="+encodeURIComponent(noteId):"")+frag;
   }
   function toast(m){ var t=$("#toast"); t.textContent=m; t.classList.add("show"); setTimeout(function(){t.classList.remove("show");},1800); }
   function numberOf(r, note){
@@ -758,7 +759,7 @@
     whereSec.appendChild(el("div","lbl","Where"));
     var cd=el("code",null,n.target_selector||(n.section_id?"#"+n.section_id:n.page_url||"/")); whereSec.appendChild(cd);
     whereSec.appendChild(document.createTextNode("  "));
-    var loc=el("a",null,"open at this spot →"); loc.href=reviewLink(r,n.page_url); loc.target="_blank"; whereSec.appendChild(loc);
+    var loc=el("a",null,"open at this spot →"); loc.href=reviewLink(r,n.page_url,n.id); loc.target="_blank"; whereSec.appendChild(loc);
     if(n.target_text){ var q=el("div","d-quote","“"+n.target_text+"”"); q.setAttribute("dir","auto"); whereSec.appendChild(q); }
     d.appendChild(whereSec);
 

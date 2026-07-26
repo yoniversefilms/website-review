@@ -760,6 +760,31 @@
     pulse(note.id);
   }
 
+  /* ---- deep link: ?wrnote=<id> lands on the page AND goes to the pin ----
+   * The dashboard's "open at this spot →" carries the note id. Fires ONCE: notes
+   * re-fetch on every tab focus, and re-scrolling would yank the page out from
+   * under whoever is reading it. Waits for load+settle because a pin halfway down
+   * a page of unsized images is at the wrong Y until those images have height. */
+  var WANT_NOTE = params.get("wrnote") || "";
+  function whenSettled(fn) {
+    if (document.readyState === "complete") return setTimeout(fn, 150);
+    window.addEventListener("load", function () { setTimeout(fn, 150); });
+  }
+  function focusRequestedNote() {
+    if (!WANT_NOTE) return;
+    var want = WANT_NOTE, n = null;
+    for (var i = 0; i < notes.length; i++) if (notes[i].id === want) { n = notes[i]; break; }
+    if (!n) return;                     // not in this fetch yet — stay armed for the next one
+    WANT_NOTE = "";
+    whenSettled(function () {
+      var a = onPage(n) ? anchorEl(n) : null;
+      if (a) a.scrollIntoView({ behavior: "smooth", block: "center" });
+      // No anchor (element gone, or a note taken on the other layout) => don't leave the
+      // click looking dead: show the note itself in the sidebar instead.
+      if (a) pulse(n.id); else openInSidebar(n);
+    });
+  }
+
   /* ---------------- photos ---------------- */
   function pubURL(p) { return CFG.supabaseUrl.replace(/\/$/, "") + "/storage/v1/object/public/review-photos/" + p; }
   function attsOf(id) { return atts.filter(function (a) { return a.note_id === id; }); }
@@ -878,7 +903,7 @@
       if (res.error) { console.warn("[review] fetch failed:", res.error.message); return; }
       var server = res.data || [];
       var pending = notes.filter(function (n) { return n._pending && !server.some(function (s) { return s.id === n.id; }); });
-      notes = server.concat(pending); cacheWrite(); renderAll(); flushPending();
+      notes = server.concat(pending); cacheWrite(); renderAll(); flushPending(); focusRequestedNote();
     });
     supa.from("comments").select("*").eq("project_key", BOARD).order("created_at", { ascending: true }).then(function (res) { if (!res.error) { comments = res.data || []; if (sidebarOpen) renderSidebar(); renderAll(); } });
     supa.from("attachments").select("*").eq("project_key", BOARD).then(function (res) { if (!res.error) { atts = res.data || []; if (sidebarOpen) renderSidebar(); } });
