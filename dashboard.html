@@ -129,6 +129,12 @@
     .drawer{position:fixed;inset:auto 0 0 0;width:100%;max-width:100%;max-height:78vh;border-radius:16px 16px 0 0;z-index:50}
   }
   .hidden{display:none !important}
+  .gd{padding:6px 4px 10px;font-size:13.5px}
+  .gd h4{margin:16px 0 8px;font-size:13px;color:var(--ink)} .gd h4:first-child{margin-top:4px}
+  .gd ol{margin:0 0 4px;padding-inline-start:22px;color:var(--dim);line-height:1.75}
+  .gd li b{color:var(--ink)}
+  .gd code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:1px 6px;font:12px var(--mono);color:var(--ink)}
+  .gd p.dim{color:var(--dim);font-size:12.5px;margin:6px 0 0}
   .gate{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:28px 24px;max-width:380px;margin:14vh auto 0;text-align:center}
   .gate .logo{margin:0 auto 12px}
   .gate h2{font-size:17px;margin:0 0 6px}
@@ -190,6 +196,51 @@
   <div class="dpanel" id="bpanel">
     <div class="dpanel-h" id="bpanelH">🔀 Builds — Claude's PRs awaiting you <span class="dim" id="bCount"></span><span class="spacer"></span><span class="dim" id="bChev">show ▾</span></div>
     <div id="bBody" style="display:none"><div id="prList"></div></div>
+  </div>
+
+  <div class="dpanel" id="gpanel">
+    <div class="dpanel-h" id="gpanelH">📖 Guide — how this works, step by step <span class="spacer"></span><span class="dim" id="gChev">show ▾</span></div>
+    <div id="gBody" style="display:none" class="gd">
+
+      <h4>The loop — a note's life</h4>
+      <ol>
+        <li>A reviewer opens the site with <code>?review=1</code> and pins a note. It lands here in <b>Under review</b>.</li>
+        <li>You triage it: <b>🔧 Fix</b> (optionally typing an instruction for Claude) → it moves to <b>Scheduled</b>. Or Park / Resolve it.</li>
+        <li>Click <b>🤖 Fix with Claude</b> on the site's group → a ready-made prompt is copied. Paste it into Claude Code (or just type <code>/fix-queue &lt;site&gt;</code> there).</li>
+        <li>Claude builds the fixes <b>on a branch</b> and opens a GitHub PR. Claude never merges.</li>
+        <li>The PR appears in <b>🔀 Builds</b> above. Open it → side-by-side before/after → <b>Approve &amp; merge</b>, or <b>🚩 Flag</b> with a reason (the note re-queues and Claude retries against your reason).</li>
+        <li>On merge the built HTML lands on your clipboard with the GHL paste checklist. Claude then marks the notes resolved — the reviewer sees a <b style="color:#39d98a">green pin</b>.</li>
+      </ol>
+
+      <h4>Get the GitHub token (the 🔑 button) — one time, ~2 minutes</h4>
+      <ol>
+        <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">github.com/settings/personal-access-tokens/new</a> (Settings → Developer settings → Fine-grained tokens).</li>
+        <li><b>Token name:</b> <code>review-os-dashboard</code>. <b>Expiration:</b> 90 days is fine.</li>
+        <li><b>Repository access:</b> "Only select repositories" → tick your client repos (today: <code>website-review</code>, <code>pixeldust-lovedust</code>).</li>
+        <li><b>Permissions → Repository permissions:</b> set <b>Contents = Read and write</b> and <b>Pull requests = Read and write</b>. Nothing else.</li>
+        <li>Generate, copy the <code>github_pat_…</code> string, come back here, click <b>🔑</b>, paste.</li>
+      </ol>
+      <p class="dim">It's stored only in this browser. When it expires the Builds panel goes quiet — make a new one and paste again. Type <code>clear</code> in the 🔑 box to remove it.</p>
+
+      <h4>Links &amp; codes</h4>
+      <ol>
+        <li><b>Reviewer link</b> (send to a client): the live page + <code>?review=1</code></li>
+        <li><b>Owner mode</b> (your triage tools on the page itself): open once with <code>&amp;owner=1</code></li>
+        <li><b>Client portal:</b> Deliverables panel → <b>🔗 client portal link</b> — their password is <code>pds</code></li>
+        <li><b>This dashboard:</b> your code is the one you set — it's remembered per browser</li>
+        <li><b>New site on the dashboard:</b> type its board key above, or open <code>dashboard.html?add=&lt;board&gt;</code></li>
+      </ol>
+
+      <h4>Wire a brand-new client (nothing is copied — five pointers)</h4>
+      <ol>
+        <li>Create their GitHub repo (site source lives there, never in the tool's repo).</li>
+        <li>Add a <code>clients</code> row in Supabase with <code>repo = 'owner/name'</code> → their PRs appear in Builds.</li>
+        <li>Set the board key: <code>WR_CONFIG.projectKey</code> in their page (GHL sites: paste <code>ghl-review-loader.html</code> into Settings → Tracking Code → Body once).</li>
+        <li>Map the board in <code>reviews/config.json</code> so <code>sync.mjs</code> writes feedback into their repo.</li>
+        <li>Add the board here with <code>?add=&lt;board&gt;</code>.</li>
+      </ol>
+      <p class="dim">Full manual with the architecture diagram: <a href="docs/OPERATIONS.md" target="_blank">docs/OPERATIONS.md</a> in the repo.</p>
+    </div>
   </div>
 
   <div class="sites" id="sites"></div>
@@ -305,8 +356,15 @@
     // looks like a host (the shipped widget writes site_host = BOARD, so it's often not);
     // finally assume the page sits on this dashboard's own origin — true for drafts served
     // from the website-review Pages site, and correct on localhost during dev.
-    var host = r.board.indexOf(".")>=0 ? r.board
-             : (r.host && r.host.indexOf(".")>=0) ? r.host : null;
+    var b = r.board, h = (r.host && r.host.indexOf(".")>=0) ? r.host : null;
+    var host;
+    if (b.indexOf(".")>=0) {
+      // Domain board: prefer the registered host when it's the same site (it keeps the
+      // "www." the board key strips — an apex with no DNS record is a dead link).
+      host = (h && (h===b || h.slice(-(b.length+1))==="."+b)) ? h : b;
+    } else {
+      host = h;   // explicit key ("ruth-v5-draft"): only the registered host knows the site
+    }
     var base = host ? "https://"+host : location.origin;
     var p = page && page!=="/" ? String(page) : "/";
     var h = p.indexOf("#"), frag = h>=0 ? p.slice(h) : "";
@@ -385,6 +443,10 @@
     var b=$("#dBody"); var open=b.style.display!=="none";
     b.style.display=open?"none":"block"; $("#dChev").textContent=open?"show ▾":"hide ▴";
     if(!open) loadDeliv();
+  });
+  $("#gpanelH").addEventListener("click",function(){
+    var b=$("#gBody"); var open=b.style.display!=="none";
+    b.style.display=open?"none":"block"; $("#gChev").textContent=open?"show ▾":"hide ▴";
   });
   $("#dPortal").addEventListener("click",function(){
     var ck=$("#dClient").value; if(!ck){ toast("Pick a client"); return; }
@@ -641,7 +703,11 @@
       var fx = el("button","mini primary","🤖 Fix with Claude");
       fx.addEventListener("click",function(){ copy(claudePrompt(r.board),"Prompt copied — paste it to Claude"); });
       acts.appendChild(fx);
-      var op = el("a","mini","↗ open"); op.href = reviewLink(r,"/"); op.target="_blank"; op.style.textDecoration="none";
+      // Land on the page the board's notes actually live on — "/" is a 404 for a
+      // draft board whose site sits in a subdirectory of a shared host.
+      var landing = "/";
+      for (var i=r.notes.length-1; i>=0; i--) if (r.notes[i].page_url){ landing = r.notes[i].page_url; break; }
+      var op = el("a","mini","↗ open"); op.href = reviewLink(r,landing); op.target="_blank"; op.style.textDecoration="none";
       acts.appendChild(op);
       h.appendChild(acts); g.appendChild(h);
       items.forEach(function(n){

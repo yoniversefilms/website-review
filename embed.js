@@ -886,7 +886,10 @@
   if (!ME) openWelcome(); else markTour();   // returning reviewers (name saved) skip welcome + tour
   loadSupabase(function () {
     supa = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnon, { global: { headers: { "x-board-key": BOARD } } });
-    supa.from("projects").upsert({ project_key: BOARD, name: document.title || BOARD, site_host: normHost(location.hostname) }, { onConflict: "project_key" }).then(function (r) { if (r.error) console.warn("[review] board register:", r.error.message); flushPending(); fetchNotes(); });
+    // site_host = the REAL host links must use, unstripped: "www.site.com" stays www —
+    // the dashboard builds "open" links from this, and an apex with no DNS record 404s.
+    // (normHost's www-strip is for BOARD identity only, never for link-building.)
+    supa.from("projects").upsert({ project_key: BOARD, name: document.title || BOARD, site_host: String(location.hostname || "").toLowerCase() }, { onConflict: "project_key" }).then(function (r) { if (r.error) console.warn("[review] board register:", r.error.message); flushPending(); fetchNotes(); });
   });
   window.addEventListener("focus", fetchNotes);
   document.addEventListener("visibilitychange", function () { if (!document.hidden) fetchNotes(); });
