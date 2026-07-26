@@ -17,9 +17,40 @@ See **[PLAN.md](PLAN.md)** for the full design and rationale.
 - **One universal block** (`ghl-review-loader.html`) is pasted into a site's
   **GHL → Settings → Tracking Code → Body** (Save + Re-publish). It's dormant for normal
   visitors and loads nothing until the URL has `?review` (e.g. `?review=1`).
-- **Board = the site's own domain** — no per-site key; the widget self-registers the board
-  on first use. Because the block loads `embed.js` from Pages, improving the widget updates
-  every site with no re-paste.
+- **Board = the project key** — the widget self-registers it on first use. Because the block
+  loads `embed.js` from Pages, improving the widget updates every site with no re-paste.
+  See [Project keys](#project-keys) below — on a shared host a domain-only key would mix
+  two clients' feedback into one board.
+
+## Project keys
+
+A **board** is one project's feedback. The key is resolved in this order:
+
+1. `?board=<id>` in the URL
+2. `data-review-key="<id>"` on the embed `<script>` tag
+3. `WR_CONFIG.projectKey` ← **set this for anything long-lived**
+4. auto-derived
+
+**Auto-derivation is host-aware.** Deriving from the hostname alone is only safe when the
+project owns that hostname:
+
+| Where it's hosted | Derived key |
+|---|---|
+| Custom domain — `lovedustfilms.com/about/` | `lovedustfilms.com` |
+| Shared host — `yoniversefilms.github.io/abby-site/home.html` | `yoniversefilms.github.io/abby-site` |
+| Shared host — `yoniversefilms.github.io/ruth-site/index.html` | `yoniversefilms.github.io/ruth-site` |
+| Local — `localhost:8899/home.html` | `localhost:8899` |
+
+On GitHub Pages, Netlify, Vercel, Framer, localhost, and raw IPs, **many projects answer to
+one hostname** — so the directory is appended. Without that, the two `github.io` rows above
+would share a board and two clients would read each other's notes. Custom domains keep the
+bare-domain key, so existing boards (`ruthpedida.co.il`, `lovedustfilms.com`) are unchanged.
+
+The auto key is a safety net, not a plan — it changes if the site moves to its own domain or
+a different folder, orphaning the old notes. **Set an explicit `projectKey` for any project
+you intend to keep**, and add it to `reviews/config.json`. The resolved key is logged to the
+browser console on every load (and exposed as `window.__wrBoard`); on a shared host with no
+explicit key the log is a warning.
 
 ## Supabase project
 

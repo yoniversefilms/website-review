@@ -122,10 +122,27 @@
   @media (max-width:900px){
     .drawer{position:fixed;inset:auto 0 0 0;width:100%;max-width:100%;max-height:78vh;border-radius:16px 16px 0 0;z-index:50}
   }
+  .hidden{display:none !important}
+  .gate{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:28px 24px;max-width:380px;margin:14vh auto 0;text-align:center}
+  .gate .logo{margin:0 auto 12px}
+  .gate h2{font-size:17px;margin:0 0 6px}
+  .gate p{color:var(--dim);font-size:13px;margin:0 0 18px}
+  .gate input{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:12px 14px;font:15px var(--sans);text-align:center;letter-spacing:.2em}
+  .gate button{width:100%;margin-top:10px;background:var(--accent);color:#fff;border:0;border-radius:10px;padding:12px;font:600 14px var(--sans);cursor:pointer}
+  .gate .err{color:#ff6b6b;font-size:12.5px;margin-top:10px;min-height:16px}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="gate" id="gate">
+  <div class="logo">◑</div>
+  <h2>Review OS</h2>
+  <p>Owner console. Enter your code.</p>
+  <input id="pw" type="password" placeholder="code" autocomplete="off" />
+  <button id="enter">Enter →</button>
+  <div class="err" id="err"></div>
+</div>
+
+<div class="wrap hidden" id="wrap">
   <header>
     <div class="logo">◑</div>
     <div>
@@ -233,9 +250,12 @@
     return Promise.all([
       api(board, "/notes?project_key=eq."+encodeURIComponent(board)+"&order=created_at.asc&select=*"),
       api(board, "/comments?project_key=eq."+encodeURIComponent(board)+"&order=created_at.asc&select=note_id,author,body,created_at"),
-      api(board, "/attachments?project_key=eq."+encodeURIComponent(board)+"&select=note_id,storage_path")
-    ]).then(function(r){ return { board:board, notes:r[0]||[], comments:r[1]||[], atts:r[2]||[], error:null }; })
-      .catch(function(e){ return { board:board, notes:[], comments:[], atts:[], error:e.message }; });
+      api(board, "/attachments?project_key=eq."+encodeURIComponent(board)+"&select=note_id,storage_path"),
+      // the host the widget self-registered — the only way to build a link for a
+      // board key that isn't a domain. Never fatal: a missing row just means no host.
+      api(board, "/projects?project_key=eq."+encodeURIComponent(board)+"&select=site_host").catch(function(){ return []; })
+    ]).then(function(r){ return { board:board, notes:r[0]||[], comments:r[1]||[], atts:r[2]||[], host:(r[3]&&r[3][0]&&r[3][0].site_host)||null, error:null }; })
+      .catch(function(e){ return { board:board, notes:[], comments:[], atts:[], host:null, error:e.message }; });
   }
   function attsOf(r, id){ return (r.atts||[]).filter(function(a){ return a.note_id===id; }); }
   function photoURL(p){ return (C.supabaseUrl||"").replace(/\/$/,"") + "/storage/v1/object/public/review-photos/" + p; }
@@ -268,7 +288,22 @@
     if(s<90) return "just now"; if(s<3600) return Math.round(s/60)+"m"; if(s<86400) return Math.round(s/3600)+"h";
     if(s<86400*30) return Math.round(s/86400)+"d"; return new Date(iso).toLocaleDateString();
   }
-  function reviewLink(board, page){ var p = page && page!=="/" ? page : "/"; return "https://"+board+p+(p.indexOf("?")>=0?"&":"?")+"review=1"; }
+  // A board key is usually the site's domain, but an explicit key ("ruth-v5-draft") is not a
+  // host — fall back to the site_host the widget registered. page_url is pathname(+hash), so
+  // the query has to go BEFORE the fragment. Opened from the owner console ⇒ owner tools on.
+  function reviewLink(r, page){
+    // Prefer a board key that IS a domain; then the registered site_host, but only if it
+    // looks like a host (the shipped widget writes site_host = BOARD, so it's often not);
+    // finally assume the page sits on this dashboard's own origin — true for drafts served
+    // from the website-review Pages site, and correct on localhost during dev.
+    var host = r.board.indexOf(".")>=0 ? r.board
+             : (r.host && r.host.indexOf(".")>=0) ? r.host : null;
+    var base = host ? "https://"+host : location.origin;
+    var p = page && page!=="/" ? String(page) : "/";
+    var h = p.indexOf("#"), frag = h>=0 ? p.slice(h) : "";
+    if (h>=0) p = p.slice(0,h) || "/";
+    return base+p+(p.indexOf("?")>=0?"&":"?")+"review=1&owner=1"+frag;
+  }
   function toast(m){ var t=$("#toast"); t.textContent=m; t.classList.add("show"); setTimeout(function(){t.classList.remove("show");},1800); }
   function numberOf(r, note){
     var sorted=r.notes.slice().sort(function(a,b){return (a.created_at||"")<(b.created_at||"")?-1:1;});
@@ -566,7 +601,7 @@
       var fx = el("button","mini primary","🤖 Fix with Claude");
       fx.addEventListener("click",function(){ copy(claudePrompt(r.board),"Prompt copied — paste it to Claude"); });
       acts.appendChild(fx);
-      var op = el("a","mini","↗ open"); op.href = reviewLink(r.board,"/"); op.target="_blank"; op.style.textDecoration="none";
+      var op = el("a","mini","↗ open"); op.href = reviewLink(r,"/"); op.target="_blank"; op.style.textDecoration="none";
       acts.appendChild(op);
       h.appendChild(acts); g.appendChild(h);
       items.forEach(function(n){
@@ -617,7 +652,7 @@
     whereSec.appendChild(el("div","lbl","Where"));
     var cd=el("code",null,n.target_selector||(n.section_id?"#"+n.section_id:n.page_url||"/")); whereSec.appendChild(cd);
     whereSec.appendChild(document.createTextNode("  "));
-    var loc=el("a",null,"open at this spot →"); loc.href=reviewLink(r.board,n.page_url); loc.target="_blank"; whereSec.appendChild(loc);
+    var loc=el("a",null,"open at this spot →"); loc.href=reviewLink(r,n.page_url); loc.target="_blank"; whereSec.appendChild(loc);
     if(n.target_text){ var q=el("div","d-quote","“"+n.target_text+"”"); q.setAttribute("dir","auto"); whereSec.appendChild(q); }
     d.appendChild(whereSec);
 
@@ -708,16 +743,38 @@
   $("#refreshBtn").addEventListener("click",load);
   $("#addBtn").addEventListener("click",function(){
     var v=norm($("#addInput").value);
-    if(!v||v.indexOf(".")<0){ toast("Enter a domain, e.g. site.com"); return; }
+    // A board key is usually a domain, but explicit keys (WR_CONFIG.projectKey,
+    // e.g. "ruth-v5-draft") have no dot — don't reject those.
+    if(!v){ toast("Enter a domain or board key"); return; }
     var b=boards(); if(b.indexOf(v)<0){ b.push(v); saveBoards(b); }
     $("#addInput").value=""; load();
   });
   $("#addInput").addEventListener("keydown",function(e){ if(e.key==="Enter") $("#addBtn").click(); });
-  window.addEventListener("focus",load);
-  setInterval(function(){ if(!document.hidden) load(); }, 12000);   // the live loop — no manual refresh
-  load();
-  loadDeliv();
-  loadBuilds();
+  window.addEventListener("focus",function(){ if(started) load(); });
+
+  /* ---------- owner gate ----------
+     Courtesy gate, not security: the code lives in client-side JS and the board
+     data is still reachable with the publishable key (see README "Security model").
+     It keeps a stray/shared link from landing someone straight in the triage UI. */
+  var AUTH_KEY = "wrdash:owner", CODE = "qqwe", started = false;
+  function start(){
+    if(started) return; started = true;
+    $("#gate").classList.add("hidden");
+    $("#wrap").classList.remove("hidden");
+    setInterval(function(){ if(!document.hidden) load(); }, 12000);   // the live loop — no manual refresh
+    load(); loadDeliv(); loadBuilds();
+  }
+  function unlock(){
+    if( ($("#pw").value||"").trim().toLowerCase() !== CODE ){
+      $("#err").textContent = "Nope — try again."; $("#pw").value=""; $("#pw").focus(); return;
+    }
+    try{ localStorage.setItem(AUTH_KEY,"1"); }catch(e){}
+    start();
+  }
+  $("#enter").addEventListener("click", unlock);
+  $("#pw").addEventListener("keydown", function(e){ if(e.key==="Enter") unlock(); });
+  var remembered = false; try{ remembered = localStorage.getItem(AUTH_KEY)==="1"; }catch(e){}
+  if(remembered) start(); else $("#pw").focus();
 })();
 </script>
 </body>

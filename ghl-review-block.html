@@ -26,11 +26,38 @@
   if (!params.has("review") && !CFG.alwaysOn) return;
 
   function normHost(h) { return String(h || "").replace(/^www\./i, "").toLowerCase() || "localhost"; }
-  var BOARD =
+
+  /* ---------------- board (project key) derivation ----------------
+   * A board is one project's feedback. Deriving it from the hostname alone is
+   * only safe when the project OWNS that hostname. On a shared/multi-tenant host
+   * (GitHub Pages, Netlify, Vercel, Framer, localhost…) every project answers to
+   * the SAME hostname, so a hostname-only key silently merges unrelated clients
+   * into one board. On those hosts we append the directory path, which is what
+   * actually distinguishes one project from another.
+   * Custom domains keep the bare-hostname key — existing boards stay valid. */
+  var SHARED_HOST_RE = /(^|\.)(github\.io|netlify\.app|vercel\.app|pages\.dev|web\.app|firebaseapp\.com|surge\.sh|framer\.(website|app)|onrender\.com|glitch\.me|repl\.co|ngrok(-free)?\.(io|app|dev)|trycloudflare\.com|localhost)$/i;
+  function isSharedHost(h) {
+    return SHARED_HOST_RE.test(h) || /^\d{1,3}(\.\d{1,3}){3}$/.test(h) || h === "localhost";
+  }
+  function dirPath() {
+    // /abby-site/home.html -> /abby-site   ·   /abby-site/ -> /abby-site   ·   / -> ""
+    var p = String(location.pathname || "/");
+    if (!/\/$/.test(p)) p = p.replace(/\/[^\/]*$/, "/");   // drop the file segment
+    return p.replace(/\/+$/, "").replace(/^\/+/, "");       // trim slashes both ends
+  }
+  function autoBoard() {
+    var host = normHost(location.hostname);
+    if (!isSharedHost(host)) return host;                   // custom domain — unchanged
+    var h = location.host ? location.host.replace(/^www\./i, "").toLowerCase() : host; // keep :port
+    var d = dirPath();
+    return d ? h + "/" + d : h;
+  }
+
+  var BOARD_EXPLICIT =
     params.get("board") ||
     (thisScript && thisScript.getAttribute("data-review-key")) ||
-    CFG.projectKey ||
-    normHost(location.hostname);
+    CFG.projectKey || null;
+  var BOARD = BOARD_EXPLICIT || autoBoard();
 
   // OWNER MODE (triage UI: Fix/Park/Resolve). Open once with &owner=1 to mark this
   // browser as the owner (persists); &owner=0 clears it. Clients never see triage.
@@ -47,6 +74,21 @@
     return;
   }
   window.__wrLoaded = true;
+
+  // Surface the resolved project key — the operator needs it for reviews/config.json.
+  // On a shared host with no explicit key, say so loudly: the auto key is path-derived
+  // and will change if the site later moves to its own domain or a different folder.
+  window.__wrBoard = BOARD;
+  if (BOARD_EXPLICIT) {
+    console.info("[review] project key: %s (explicit)", BOARD);
+  } else if (isSharedHost(normHost(location.hostname))) {
+    console.warn(
+      "[review] project key: %s (auto, derived from host+path on a SHARED host).\n" +
+      "Set an explicit key so feedback survives a move:\n" +
+      '  window.WR_CONFIG = { …, projectKey: "your-project" }', BOARD);
+  } else {
+    console.info("[review] project key: %s (auto, from domain)", BOARD);
+  }
 
   /* ---------------- identity + local cache ---------------- */
   var LS = { name: "wr:name", aid: "wr:aid", notes: "wr:notes:" + BOARD };
@@ -847,7 +889,7 @@
   if (!ME) openWelcome(); else markTour();   // returning reviewers (name saved) skip welcome + tour
   loadSupabase(function () {
     supa = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnon, { global: { headers: { "x-board-key": BOARD } } });
-    supa.from("projects").upsert({ project_key: BOARD, name: document.title || BOARD, site_host: BOARD }, { onConflict: "project_key" }).then(function (r) { if (r.error) console.warn("[review] board register:", r.error.message); flushPending(); fetchNotes(); });
+    supa.from("projects").upsert({ project_key: BOARD, name: document.title || BOARD, site_host: normHost(location.hostname) }, { onConflict: "project_key" }).then(function (r) { if (r.error) console.warn("[review] board register:", r.error.message); flushPending(); fetchNotes(); });
   });
   window.addEventListener("focus", fetchNotes);
   document.addEventListener("visibilitychange", function () { if (!document.hidden) fetchNotes(); });
