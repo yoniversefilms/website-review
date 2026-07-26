@@ -774,16 +774,26 @@
     if (!n) return;                     // not in this fetch yet — stay armed for the next one
     WANT_NOTE = "";
     whenSettled(function () {
-      // Center the PIN, not its anchor: a note pinned low in a tall section is metres
-      // from the section's centre, and centring the section leaves the pin at the very
-      // edge of the viewport (or past it). Fall back to the anchor when the marker
-      // isn't rendered — e.g. the note was taken on the other layout.
+      // Centre the PIN, not its anchor: a note pinned low in a tall section is a long
+      // way from that section's centre, so centring the section can leave the pin at
+      // the very edge of the viewport — or past it.
       var m = onPage(n) ? markers.get(n.id) : null;
-      var target = (m && m.el && m.el.style.display !== "none") ? m.el : (onPage(n) ? anchorEl(n) : null);
-      if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
-      // Nothing to scroll to (element gone, or other layout) => don't leave the click
-      // looking dead: show the note itself in the sidebar instead.
-      if (target) pulse(n.id); else openInSidebar(n);
+      var pinEl = (m && m.el && m.el.style.display !== "none") ? m.el : null;
+      if (pinEl) {
+        // TRAP: pins sit in .wr-overlay, which is position:fixed — scrollIntoView() is
+        // a silent no-op on fixed elements (it "succeeds" and the page never moves).
+        // Convert the pin's viewport rect into a document offset and scroll ourselves.
+        var r = pinEl.getBoundingClientRect();
+        var y = window.scrollY + r.top + r.height / 2 - window.innerHeight / 2;
+        window.scrollTo({ top: Math.max(0, Math.round(y)), behavior: "smooth" });
+        pulse(n.id);
+        return;
+      }
+      // No marker (note taken on the other layout, or its element is gone): fall back to
+      // the anchor, which is a normal in-flow element and scrolls fine.
+      var a = onPage(n) ? anchorEl(n) : null;
+      if (a) { a.scrollIntoView({ behavior: "smooth", block: "center" }); pulse(n.id); }
+      else openInSidebar(n);   // never leave the click looking dead
     });
   }
 
