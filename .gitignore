@@ -14,3 +14,6 @@ reviews/secret.local.json
 # Tower: machine-written session state (folder stays tracked for curated TASKS.md)
 tower/status.json
 tower/.status.*.tmp
+
+# Portfolio knowledge base — internal only, real client names. Never commit.
+PORTFOLIO-SUMMARY.md
